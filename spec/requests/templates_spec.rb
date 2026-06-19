@@ -173,6 +173,49 @@ RSpec.describe "Templates", type: :request do
         "template[utilizacoes_questoes_attributes][NEW_QUESTION][_destroy]"
       )
     end
+
+    it "prepara uma questão discursiva inicial sem opções" do
+      new_template = Template.new(adm_id: 1)
+
+      allow(new_template).to receive(:questoes).and_return([])
+      allow(Template)
+        .to receive(:new)
+        .with(adm: current_administrador)
+        .and_return(new_template)
+
+      get new_template_path
+
+      questao = new_template.utilizacoes_questoes.first.questao
+      expect(questao).to be_discursiva
+      expect(questao.opcoes).to be_empty
+    end
+
+    it "não renderiza campos de exclusão persistida na criação" do
+      new_template = Template.new(adm_id: 1)
+
+      allow(new_template).to receive(:questoes).and_return([])
+      allow(Template)
+        .to receive(:new)
+        .with(adm: current_administrador)
+        .and_return(new_template)
+
+      get new_template_path
+
+      expect(response.body).to include("template-form#destroyQuestion")
+      expect(response.body).to include("template-form#destroyOption")
+      expect(response.body).not_to include(
+        "template[utilizacoes_questoes_attributes][0][id]"
+      )
+      expect(response.body).not_to include(
+        "template[utilizacoes_questoes_attributes][0][_destroy]"
+      )
+      expect(response.body).not_to include(
+        "template[utilizacoes_questoes_attributes][NEW_QUESTION][id]"
+      )
+      expect(response.body).not_to include(
+        "template[utilizacoes_questoes_attributes][NEW_QUESTION][_destroy]"
+      )
+    end
   end
 
   describe "GET /templates/:id" do
@@ -294,6 +337,70 @@ RSpec.describe "Templates", type: :request do
         Nokogiri::HTML(response.body)
           .at_xpath("//a[normalize-space()='Voltar aos templates']")["href"]
       ).to eq(templates_path)
+    end
+
+    it "renderiza botões para remover questões e opções via update do template" do
+      template_com_questao_objetiva = create_template_with_questoes(
+        titulo: "Avaliação objetiva",
+        questoes: [
+          {
+            enunciado: "Como você avalia a disciplina?",
+            tipo: :objetiva,
+            opcoes: %w[Ruim Regular Bom]
+          }
+        ]
+      )
+
+      allow(Template)
+        .to receive(:find)
+        .with(template_com_questao_objetiva.id.to_s)
+        .and_return(template_com_questao_objetiva)
+
+      get edit_template_path(template_com_questao_objetiva)
+
+      expect(response.body).to include("/assets/icons/trash-")
+      expect(response.body).to include(
+        "template[utilizacoes_questoes_attributes][0][id]"
+      )
+      expect(response.body).to include(
+        "template[utilizacoes_questoes_attributes][0][_destroy]"
+      )
+      expect(response.body).to include(
+        "template[utilizacoes_questoes_attributes][0]" \
+          "[questao_attributes][opcoes_attributes][0][id]"
+      )
+      expect(response.body).to include(
+        "template[utilizacoes_questoes_attributes][0]" \
+          "[questao_attributes][opcoes_attributes][0][_destroy]"
+      )
+      expect(response.body).to include("template-form#destroyQuestion")
+      expect(response.body).to include("template-form#destroyOption")
+      expect(response.body).not_to include("checkbox")
+      expect(response.body).not_to include("<span>Remover")
+    end
+
+    it "renderiza botões frontend para adicionar questão e opção" do
+      allow(Template).to receive(:find).with("1").and_return(template)
+
+      get edit_template_path(template)
+
+      expect(response.body).to include("data-controller=\"template-form\"")
+      expect(response.body).to include("template-form#addQuestion")
+      expect(response.body).to include("template-form#addOption")
+      expect(response.body).to include("template-form#moveQuestionUp")
+      expect(response.body).to include("template-form#moveQuestionDown")
+      expect(response.body).to include("template-form#moveOptionUp")
+      expect(response.body).to include("template-form#moveOptionDown")
+      expect(response.body).to include("data-template-form-question-number")
+      expect(response.body).to include("data-template-form-option-number")
+      expect(response.body).not_to include("type=\"number\"")
+      expect(response.body).not_to include("name=\"adicionar_questao\"")
+      expect(response.body).not_to include("name=\"adicionar_opcao\"")
+      expect(response.body).to include("/assets/icons/plus-")
+      expect(response.body).to include("/assets/icons/arrow-up-")
+      expect(response.body).to include("/assets/icons/arrow-down-")
+      expect(response.body).not_to include("<span>Adicionar")
+      expect(response.body).not_to include("<span>Mover")
     end
 
     it "renderiza botões para remover questões e opções via update do template" do
