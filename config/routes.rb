@@ -35,12 +35,7 @@ Rails.application.routes.draw do
 
   resources :templates
 
-  resources :formularios, only: %i[index new create] do
-    collection do
-      post :preparar
-      get :publicar
-    end
-
+  resources :formularios, only: %i[index show new create] do
     member do
       get :exportar_csv
     end
