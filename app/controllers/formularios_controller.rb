@@ -4,78 +4,56 @@ require "csv"
 
 class FormulariosController < ApplicationController
   before_action :authenticate_user!
-  before_action :require_administrador!, except: :exportar_csv
-  before_action :require_administrador_para_exportacao!, only: :exportar_csv
+  before_action :authorize_formulario!, only: %i[show exportar_csv]
+  before_action :set_formulario, only: %i[show exportar_csv]
 
   def index
-    @formularios = Formulario
+    authorize! Formulario
+
+    formularios = Formulario
       .do_departamento(current_administrador.departamento)
       .do_semestre_atual
       .recentes
-      .includes(:template, turma: :materia)
+      .includes(:template, :avaliacoes, turma: :materia)
+
+    @user_formularios = formularios.criados_por(current_administrador)
+    @other_formularios = formularios.criados_por_outros(current_administrador)
+  end
+
+  def show
+    authorize! @formulario
   end
 
   def new
+    @formulario = Formulario.new(adm: current_administrador)
+    authorize! @formulario
+
     @templates = Template.all
-    @turmas = Turma.do_semestre_atual.sem_formulario.includes(:materia)
-  end
-
-  def preparar
-    Formularios::CreateFromTemplate.validate_preparacao!(
-      template_id: params[:template_id],
-      turma_ids: params[:turma_ids]
-    )
-
-    session[:formulario_preparacao] = {
-      "template_id" => params[:template_id].to_i,
-      "turma_ids" => Array(params[:turma_ids]).map(&:to_i)
-    }
-
-    redirect_to publicar_formularios_path
-  rescue Formularios::Error => e
-    redirect_to new_formulario_path, alert: e.message
-  end
-
-  def publicar
-    preparacao = session[:formulario_preparacao]
-    unless preparacao
-      redirect_to new_formulario_path
-      return
-    end
-
-    @template = Template.find(preparacao["template_id"])
-    @turmas = Turma.where(id: preparacao["turma_ids"]).includes(:materia)
+    @turmas = turmas_do_departamento
   end
 
   def create
-    preparacao = session[:formulario_preparacao]
-    unless preparacao
-      redirect_to new_formulario_path, alert: "Selecione um template e as turmas antes de publicar"
-      return
-    end
+    authorize! Formulario.new(adm: current_administrador)
 
     Formularios::CreateFromTemplate.call(
-      template_id: preparacao["template_id"],
-      turma_ids: preparacao["turma_ids"],
+      template_id: params[:template_id],
+      turma_ids: params[:turma_ids],
       publico_alvo: params[:publico_alvo],
       perfil_adm: current_administrador
     )
 
-    session.delete(:formulario_preparacao)
-
-    redirect_to new_formulario_path,
+    redirect_to formularios_path,
       notice: "Formulário criado com sucesso para as turmas selecionadas"
-  rescue Formularios::Error => e
-    if e.message == Formularios::CreateFromTemplate::SEM_PUBLICO_ALVO
-      redirect_to publicar_formularios_path, alert: e.message
-    else
-      session.delete(:formulario_preparacao)
-      redirect_to new_formulario_path, alert: e.message
-    end
+  rescue Formularios::Error, ActiveRecord::RecordInvalid => e
+    @templates = Template.all
+    @turmas = turmas_do_departamento
+    flash.now[:alert] = e.message
+    render :new, status: :unprocessable_entity
   end
 
   def exportar_csv
-    @formulario = Formulario.find(params[:id])
+    authorize! @formulario
+
     avaliacoes = @formulario.avaliacoes
       .joins(:respostas)
       .distinct
@@ -84,7 +62,7 @@ class FormulariosController < ApplicationController
         respostas: [ :questao, :texto, { opcoes_escolhidas: :opcao } ]
       )
 
-    questoes = @formulario.template.questoes.order("utilizacoes_questoes.numero")
+    questoes = @formulario.questoes.order(:id)
     csv_data = CSV.generate(headers: true, col_sep: ";") do |csv|
       csv << [ "Aluno", "Matrícula", *questoes.map(&:enunciado) ]
 
@@ -100,11 +78,21 @@ class FormulariosController < ApplicationController
 
   private
 
-  def require_administrador_para_exportacao!
-    return if current_user&.administrador?
+  def turmas_do_departamento
+    Turma
+      .do_semestre_atual
+      .do_departamento(current_administrador.departamento)
+      .includes(:materia)
+  end
 
-    redirect_to avaliacoes_pendentes_path,
-      alert: "Apenas administradores possuem acesso a este recurso"
+  def set_formulario
+    @formulario = Formulario
+      .do_departamento(current_administrador.departamento)
+      .find(params[:id])
+  end
+
+  def authorize_formulario!
+    authorize! Formulario
   end
 
   def linha_csv(avaliacao, questoes)
