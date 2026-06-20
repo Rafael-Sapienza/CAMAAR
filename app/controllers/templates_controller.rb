@@ -80,7 +80,7 @@ class TemplatesController < ApplicationController
     utilizacoes.build(numero: 1) if utilizacoes.empty?
 
     utilizacoes.each do |utilizacao|
-      utilizacao.build_questao(tipo: :discursiva) if utilizacao.questao.blank?
+      utilizacao.build_questao(tipo: nil) if utilizacao.questao.blank?
     end
   end
 
