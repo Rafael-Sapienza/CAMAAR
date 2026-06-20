@@ -8,9 +8,12 @@ RSpec.describe "Formularios", type: :request do
   let(:turma_a) { create_turma(nome_materia: "MDS", numero: 1, departamento: departamento) }
   let(:turma_b) { create_turma(nome_materia: "IHC", numero: 2, departamento: departamento) }
 
-  def preparar_formulario(template_id: template.id, turma_ids: [ turma_a.id, turma_b.id ])
-    post preparar_formularios_path,
-         params: { template_id: template_id, turma_ids: turma_ids }
+  def criar_formulario_params(template_id: template.id, turma_ids: [ turma_a.id, turma_b.id ], publico_alvo: "docentes")
+    {
+      template_id: template_id,
+      turma_ids: turma_ids,
+      publico_alvo: publico_alvo
+    }
   end
 
   describe "GET /formularios" do
@@ -37,7 +40,6 @@ RSpec.describe "Formularios", type: :request do
       expect(response.body).to include("Docentes")
       expect(response.body).to include(formulario_b.turma.nome_exibicao)
       expect(response.body).to include("Discentes")
-      expect(response.body).to include("Gerar Relatório de Respostas")
     end
 
     it "exibe mensagem quando não há formulários no semestre atual" do
@@ -106,89 +108,71 @@ RSpec.describe "Formularios", type: :request do
       get formularios_path
 
       expect(response).to redirect_to("/")
-      expect(flash[:alert]).to eq("Acesso não autorizado")
+      expect(flash[:alert]).to eq("Você não tem permissão para realizar esta ação.")
     end
   end
 
-  describe "POST /formularios/preparar" do
-    it "grava sessão e redireciona para publicação quando dados válidos" do
+  describe "GET /formularios/:id" do
+    it "exibe detalhes do formulário com botão de exportação" do
+      formulario = create_formulario(
+        turma: turma_a,
+        adm: admin.perfil_adm,
+        template: template,
+        publico_alvo: :docentes
+      )
+
+      sign_in_as(admin)
+      get formulario_path(formulario)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(formulario.template.titulo)
+      expect(response.body).to include(formulario.turma.nome_exibicao)
+      expect(response.body).to include("Gerar Relatório de Respostas")
+    end
+  end
+
+  describe "POST /formularios" do
+    it "cria formulários com template, turmas e público-alvo em uma única requisição" do
       sign_in_as(admin)
 
-      preparar_formulario
+      expect do
+        post formularios_path, params: criar_formulario_params
+      end.to change(Formulario, :count).by(2)
 
-      expect(response).to redirect_to(publicar_formularios_path)
+      expect(response).to redirect_to(formularios_path)
       follow_redirect!
-      expect(response.body).to include("Avaliação Docente")
-      expect(response.body).to include(turma_a.nome_exibicao)
+      expect(response.body).to include("Formulário criado com sucesso para as turmas selecionadas")
     end
 
     it "retorna erro quando nenhuma turma é selecionada" do
       sign_in_as(admin)
 
       expect do
-        preparar_formulario(turma_ids: [])
+        post formularios_path, params: criar_formulario_params(turma_ids: [])
       end.not_to change(Formulario, :count)
 
-      expect(response).to redirect_to(new_formulario_path)
-      follow_redirect!
+      expect(response).to have_http_status(:unprocessable_entity)
       expect(response.body).to include("É necessário selecionar pelo menos uma turma")
-    end
-  end
-
-  describe "GET /formularios/publicar" do
-    it "redireciona para new quando sessão está vazia" do
-      sign_in_as(admin)
-
-      get publicar_formularios_path
-
-      expect(response).to redirect_to(new_formulario_path)
-    end
-  end
-
-  describe "POST /formularios" do
-    it "cria formulários após wizard completo com público-alvo" do
-      sign_in_as(admin)
-      preparar_formulario
-
-      expect do
-        post formularios_path, params: { publico_alvo: "docentes" }
-      end.to change(Formulario, :count).by(2)
-
-      expect(response).to redirect_to(new_formulario_path)
-      follow_redirect!
-      expect(response.body).to include("Formulário criado com sucesso para as turmas selecionadas")
     end
 
     it "retorna erro quando público-alvo não é informado" do
       sign_in_as(admin)
-      preparar_formulario(turma_ids: [ turma_a.id ])
 
       expect do
-        post formularios_path, params: { publico_alvo: "" }
+        post formularios_path, params: criar_formulario_params(turma_ids: [ turma_a.id ], publico_alvo: "")
       end.not_to change(Formulario, :count)
 
-      expect(response).to redirect_to(publicar_formularios_path)
-      follow_redirect!
+      expect(response).to have_http_status(:unprocessable_entity)
       expect(response.body).to include("Por favor, selecione o público-alvo do formulário")
-    end
-
-    it "redireciona para new quando sessão está vazia" do
-      sign_in_as(admin)
-
-      post formularios_path, params: { publico_alvo: "docentes" }
-
-      expect(response).to redirect_to(new_formulario_path)
-      follow_redirect!
-      expect(response.body).to include("Selecione um template e as turmas antes de publicar")
     end
 
     it "bloqueia usuário não administrador" do
       sign_in_as(usuario)
 
-      post formularios_path, params: { publico_alvo: "docentes" }
+      post formularios_path, params: criar_formulario_params
 
       expect(response).to redirect_to("/")
-      expect(flash[:alert]).to eq("Acesso não autorizado")
+      expect(flash[:alert]).to eq("Você não tem permissão para realizar esta ação.")
       expect(Formulario.count).to eq(0)
     end
   end

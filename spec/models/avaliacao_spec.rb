@@ -54,4 +54,41 @@ RSpec.describe Avaliacao, type: :model do
       expect(avaliacao).to be_valid
     end
   end
+
+  describe "enum responida" do
+    it "inicia como não respondido com respondido_em nulo" do
+      docente = create_usuario
+      participacao = create_participacao(usuario: docente, turma: turma, tipo_participacao: :docente)
+      formulario = create_formulario(
+        turma: turma,
+        adm: admin.perfil_adm,
+        template: template,
+        publico_alvo: :docentes
+      )
+
+      avaliacao = described_class.create!(formulario: formulario, participacao_turma: participacao)
+
+      expect(avaliacao).to be_nao_respondido
+      expect(avaliacao).to be_pendente
+      expect(avaliacao.respondido_em).to be_nil
+    end
+
+    it "marca como respondido e registra timestamp" do
+      docente = create_usuario
+      participacao = create_participacao(usuario: docente, turma: turma, tipo_participacao: :docente)
+      formulario = create_formulario(
+        turma: turma,
+        adm: admin.perfil_adm,
+        template: template,
+        publico_alvo: :docentes
+      )
+      avaliacao = described_class.create!(formulario: formulario, participacao_turma: participacao)
+
+      avaliacao.marcar_como_respondida!
+
+      expect(avaliacao).to be_respondido
+      expect(avaliacao).to be_respondida
+      expect(avaliacao.respondido_em).to be_present
+    end
+  end
 end
