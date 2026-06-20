@@ -3,7 +3,8 @@ module Formularios
     SEM_TURMAS = "É necessário selecionar pelo menos uma turma"
     SEM_QUESTOES = "O template deve possuir pelo menos uma questão"
     TURMAS_INVALIDAS = "Uma ou mais turmas selecionadas são inválidas"
-    TURMA_COM_FORMULARIO = "Uma ou mais turmas selecionadas já possuem formulário"
+    TURMA_COM_FORMULARIO = "Uma ou mais turmas selecionadas já possuem formulário para este template e público-alvo"
+    TURMA_DEPARTAMENTO_INCOMPATIVEL = "Uma ou mais turmas selecionadas pertencem a outro departamento"
     SEM_PUBLICO_ALVO = "Por favor, selecione o público-alvo do formulário"
 
     def self.call(template_id:, turma_ids:, publico_alvo:, perfil_adm:)
@@ -25,7 +26,8 @@ module Formularios
       validate_turma_ids!
       validate_template!
       validate_turmas!
-      validate_turmas_sem_formulario!
+      validate_turmas_do_departamento!
+      validate_turmas_disponiveis_para_template!
     end
 
     def call
@@ -68,8 +70,20 @@ module Formularios
       raise Error, TURMAS_INVALIDAS if turmas.count != turma_ids.size
     end
 
-    def validate_turmas_sem_formulario!
-      raise Error, TURMA_COM_FORMULARIO if turmas.joins(:formularios).exists?
+    def validate_turmas_do_departamento!
+      return if perfil_adm.blank?
+
+      incompativeis = turmas.reject { |turma| turma.departamento_id == perfil_adm.departamento_id }
+      raise Error, TURMA_DEPARTAMENTO_INCOMPATIVEL if incompativeis.any?
+    end
+
+    def validate_turmas_disponiveis_para_template!
+      conflitos = Formulario.where(
+        turma_id: turma_ids,
+        template_id: template_id,
+        publico_alvo: publico_alvo
+      )
+      raise Error, TURMA_COM_FORMULARIO if conflitos.exists?
     end
 
     def validate_publico_alvo!
