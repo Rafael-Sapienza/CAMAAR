@@ -1,6 +1,11 @@
 # frozen_string_literal: true
 
 class Avaliacao < ApplicationRecord
+  enum :responida, {
+    nao_respondido: 0,
+    respondido: 1
+  }
+
   belongs_to :participacao_turma,
     class_name: "ParticipacaoTurma",
     inverse_of: :avaliacoes
@@ -26,24 +31,19 @@ class Avaliacao < ApplicationRecord
   validate :participacao_deve_ser_da_turma_do_formulario
   validate :participacao_deve_corresponder_ao_publico_alvo
 
-  scope :respondidas, -> {
-    where.not(respondido_em: nil)
-  }
-
-  scope :pendentes, -> {
-    where(respondido_em: nil)
-  }
+  scope :respondidas, -> { where(responida: :respondido) }
+  scope :pendentes, -> { where(responida: :nao_respondido) }
 
   def respondida?
-    respondido_em.present?
+    respondido?
   end
 
   def pendente?
-    !respondida?
+    nao_respondido?
   end
 
   def marcar_como_respondida!
-    update!(respondido_em: Time.current)
+    update!(responida: :respondido, respondido_em: Time.current)
   end
 
   private

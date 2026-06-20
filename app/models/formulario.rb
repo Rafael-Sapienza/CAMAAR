@@ -32,7 +32,12 @@ class Formulario < ApplicationRecord
 
   validates :adm, presence: true
   validates :turma, presence: true
-  validates :publico_alvo, presence: true
+  validates :publico_alvo,
+    presence: true,
+    uniqueness: {
+      scope: %i[turma_id template_id],
+      message: "já possui formulário para esta turma e template"
+    }
 
   validate :adm_deve_pertencer_ao_departamento_da_turma
 
@@ -50,6 +55,9 @@ class Formulario < ApplicationRecord
   scope :do_semestre_atual, -> {
     joins(:turma).merge(Turma.do_semestre_atual)
   }
+
+  scope :criados_por, ->(adm) { where(adm_id: adm&.id) }
+  scope :criados_por_outros, ->(adm) { where.not(adm_id: adm&.id) }
 
   def participacoes_alvo
     return turma.participantes_docentes if docentes?
