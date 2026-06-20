@@ -6,7 +6,10 @@ RSpec.describe "Templates", type: :request do
     double(
       "Usuario",
       administrador?: true,
-      perfil_adm: current_administrador
+      perfil_adm: current_administrador,
+      nome: "Administrador",
+      matricula: "ADM001",
+      email: "administrador@example.com"
     )
   end
   let(:template) do
@@ -63,6 +66,49 @@ RSpec.describe "Templates", type: :request do
       get templates_path
 
       expect(response).to have_http_status(:ok)
+      expect(
+        Nokogiri::HTML(response.body)
+          .at_xpath("//a[normalize-space()='Voltar aos templates']")
+      ).to be_nil
+    end
+
+    it "renderiza a lixeira que envia DELETE para um template próprio" do
+      policy_scope = double("TemplatePolicyScope")
+      included_scope = double("IncludedTemplates")
+      ordered_scope = double("OrderedTemplates")
+
+      allow_any_instance_of(ApplicationController)
+        .to receive(:policy_scope)
+        .with(Template)
+        .and_return(policy_scope)
+      allow(policy_scope)
+        .to receive(:includes)
+        .with(adm: :usuario)
+        .and_return(included_scope)
+      allow(included_scope).to receive(:recentes).and_return(ordered_scope)
+      allow(ordered_scope)
+        .to receive(:criados_por)
+        .with(current_administrador)
+        .and_return([ template ])
+      allow(ordered_scope)
+        .to receive(:criados_por_outros)
+        .with(current_administrador)
+        .and_return([])
+      allow(template).to receive(:formularios).and_return([])
+
+      get templates_path
+
+      pagina = Nokogiri::HTML(response.body)
+      card = pagina.at_css('article[data-template-id="1"]')
+      formulario = card.at_css("form[action='#{template_path(template)}']")
+
+      expect(response).to have_http_status(:ok)
+      expect(formulario["data-turbo-confirm"]).to include("Excluir o template")
+      expect(formulario.at_css('input[name="_method"][value="delete"]')).to be_present
+      expect(
+        formulario.at_css('button[aria-label="Excluir template Avaliação"]')
+      ).to be_present
+      expect(formulario.at_css('img[src*="icons/trash"]')).to be_present
     end
   end
 
@@ -79,6 +125,10 @@ RSpec.describe "Templates", type: :request do
       get new_template_path
 
       expect(response).to have_http_status(:ok)
+      expect(
+        Nokogiri::HTML(response.body)
+          .at_xpath("//a[normalize-space()='Voltar aos templates']")["href"]
+      ).to eq(templates_path)
     end
 
     it "prepara uma questão discursiva inicial sem opções" do
@@ -132,6 +182,29 @@ RSpec.describe "Templates", type: :request do
       get template_path(template)
 
       expect(response).to have_http_status(:ok)
+      pagina = Nokogiri::HTML(response.body)
+      links_de_acao = pagina.css(".template-form__actions a")
+
+      expect(links_de_acao.map { |link| link.text.strip }).to eq(
+        [ "Voltar aos templates", "Editar" ]
+      )
+      expect(links_de_acao.first["href"]).to eq(templates_path)
+    end
+
+    it "renderiza no cabeçalho o botão para usar o template em um formulário" do
+      allow(Template).to receive(:find).with("1").and_return(template)
+
+      get template_path(template)
+
+      pagina = Nokogiri::HTML(response.body)
+      botao = pagina.at_css(
+        ".template-page__header .app-button--accent"
+      )
+
+      expect(botao.text.strip).to eq("Usar em Formulário")
+      expect(botao["href"]).to eq(
+        new_formulario_path(template_id: template.id)
+      )
     end
   end
 
@@ -217,6 +290,10 @@ RSpec.describe "Templates", type: :request do
       get edit_template_path(template)
 
       expect(response).to have_http_status(:ok)
+      expect(
+        Nokogiri::HTML(response.body)
+          .at_xpath("//a[normalize-space()='Voltar aos templates']")["href"]
+      ).to eq(templates_path)
     end
 
     it "renderiza botões para remover questões e opções via update do template" do
