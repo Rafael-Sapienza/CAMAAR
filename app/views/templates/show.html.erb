@@ -1,45 +1,26 @@
-<main class="template-page">
-  <h1><%= @template.titulo %></h1>
+<main class="app-page template-page">
+  <header class="template-page__header">
+    <h1><%= @template.titulo %></h1>
+    <%= link_to "Usar em Formulário", new_formulario_path(template_id: @template.id), class: "app-button app-button--accent" %>
+  </header>
 
-  <details class="template-form__metadata" open>
-    <summary class="template-form__metadata-summary">
-      Dados do template
-    </summary>
-
-    <div class="template-form__metadata-fields">
-      <div class="template-form__field">
-        <label>Título</label>
-        <p><%= @template.titulo %></p>
-      </div>
-
-      <div class="template-form__field">
-        <label>Descrição</label>
-        <p><%= @template.descricao %></p>
-      </div>
-    </div>
-  </details>
+  <p class="template-show__description"><%= @template.descricao %></p>
 
   <hr>
-
-  <h3>Questões</h3>
 
   <div class="template-form__questions">
     <% @template.questoes_ordenadas.each do |utilizacao| %>
       <div class="template-question">
         <div class="template-question__content">
           <div class="template-question__header">
-            Questão <span><%= utilizacao.numero %></span>
-          </div>
+            <div class="template-question__header-number">
+              Questão <span><%= utilizacao.numero %></span>
+            </div>
 
-          <div class="template-form__field template-form__field--compact">
-            <label>Tipo</label>
             <p><strong><%= utilizacao.questao.discursiva? ? "Discursiva" : "Objetiva" %></strong></p>
           </div>
 
-          <div class="template-form__field">
-            <label>Enunciado</label>
-            <p><%= simple_format(utilizacao.questao.enunciado) %></p>
-          </div>
+          <%= simple_format(utilizacao.questao.enunciado) %>
 
           <% if utilizacao.questao.objetiva? && utilizacao.questao.opcoes.any? %>
             <fieldset class="template-options">
@@ -50,7 +31,7 @@
                   <div class="template-option">
                     <div class="template-option__content">
                       <span class="template-option__label">
-                        Opção <span><%= opcao.numero %></span>
+                        <%= (opcao.numero.to_i + 96).chr %>
                       </span>
                       <p><%= opcao.texto %></p>
                     </div>
@@ -65,7 +46,7 @@
   </div>
 
   <div class="template-form__actions">
-    <%= button_tag "Editar", onclick: "window.location.href='#{edit_template_path(@template)}'", class: "template-form__submit", type: :button %>
-    <%= button_tag "Voltar", onclick: "window.history.back();", class: "template-form__submit", type: :button %>
+    <%= link_to "Voltar aos templates", templates_path, class: "app-button app-button--secondary" %>
+    <%= link_to "Editar", edit_template_path(@template), class: "app-button" %>
   </div>
 </main>

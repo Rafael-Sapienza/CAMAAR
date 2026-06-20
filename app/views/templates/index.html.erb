@@ -1,30 +1,17 @@
-<main class="template-page">
+<main class="app-page template-page">
   <h1>Templates</h1>
 
-  <section id="meus-templates">
+  <% if notice %>
+    <p class="app-alert app-alert--success"><%= notice %></p>
+  <% end %>
+
+  <section id="meus-templates" class="template-section">
     <h2>Meus templates</h2>
 
     <% if @user_templates.any? %>
       <div class="template-form__cards">
         <% @user_templates.each do |t| %>
-          <%= link_to template_path(t), class: "template-form__card" do %>
-            <div>
-              <h3 class="template-form__card-title"><%= t.titulo %></h3>
-              <p class="template-form__card-description"><%= truncate(t.descricao, length: 80) %></p>
-            </div>
-            <div class="template-form__card-info">
-              <div class="template-form__card-info-item">
-                <span>📋</span>
-                <strong><%= t.questoes.count %></strong>
-                <%= t.questoes.count == 1 ? "questão" : "questões" %>
-              </div>
-              <div class="template-form__card-info-item">
-                <span>📝</span>
-                <strong><%= t.formularios.count %></strong>
-                <%= t.formularios.count == 1 ? "formulário" : "formulários" %>
-              </div>
-            </div>
-          <% end %>
+          <%= render "card", template: t, removable: true %>
         <% end %>
         <%= link_to new_template_path, class: "template-form__add-template-button", title: "Criar novo template", aria: { label: "Criar novo template" } do %>
           <%= image_tag "icons/plus.svg", alt: "", width: 24, height: 24 %>
@@ -32,7 +19,7 @@
       </div>
     <% else %>
       <div class="template-form__cards">
-        <p style="width: 100%; text-align: center; margin: 24px 0;">Nenhum template foi encontrado</p>
+        <p class="app-empty-state template-form__empty-state">Nenhum template foi encontrado</p>
         <%= link_to new_template_path, class: "template-form__add-template-button", title: "Criar novo template", aria: { label: "Criar novo template" } do %>
           <%= image_tag "icons/plus.svg", alt: "", width: 24, height: 24 %>
         <% end %>
@@ -40,37 +27,17 @@
     <% end %>
   </section>
 
-  <hr>
-
-  <h2>Outros Templates</h2>
-  <% if @other_templates.any? %>
-    <div class="template-form__cards">
-      <% @other_templates.each do |t| %>
-        <%= link_to template_path(t), class: "template-form__card" do %>
-          <div>
-            <h3 class="template-form__card-title"><%= t.titulo %></h3>
-            <p class="template-form__card-description"><%= truncate(t.descricao, length: 80) %></p>
-          </div>
-          <div class="template-form__card-info">
-            <div class="template-form__card-info-item">
-              <span>📋</span>
-              <strong><%= t.questoes.count %></strong>
-              <%= t.questoes.count == 1 ? "questão" : "questões" %>
-            </div>
-            <div class="template-form__card-info-item">
-              <span>📝</span>
-              <strong><%= t.formularios.count %></strong>
-              <%= t.formularios.count == 1 ? "formulário" : "formulários" %>
-            </div>
-          </div>
+  <section class="template-section">
+    <h2>Outros Templates</h2>
+    <% if @other_templates.any? %>
+      <div class="template-form__cards">
+        <% @other_templates.each do |t| %>
+          <%= render "card", template: t, removable: false %>
         <% end %>
-      <% end %>
-    </div>
-  <% else %>
-    <p>Nenhum template de outros administradores encontrado</p>
-  <% end %>
+      </div>
+    <% else %>
+      <p class="app-empty-state template-form__empty-state">Nenhum template de outros administradores encontrado</p>
+    <% end %>
+  </section>
 
-  <div class="template-form__actions">
-    <%= button_tag "Voltar", onclick: "window.history.back();", class: "template-form__submit", type: :button %>
-  </div>
 </main>

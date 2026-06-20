@@ -10,13 +10,12 @@
 
   <div class="template-option__content">
     <span class="template-option__label">
-      Opção <span data-template-form-option-position></span>
+      <span data-template-form-option-position>
+        <%= letra_da_opcao(opcao_form.object.numero) %>
+      </span>
     </span>
 
-    <div class="template-form__field">
-      <%= opcao_form.label :texto %>
-      <%= opcao_form.text_field :texto %>
-    </div>
+    <%= opcao_form.text_field :texto %>
   </div>
 
   <div class="template-option__actions">

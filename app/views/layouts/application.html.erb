@@ -27,6 +27,27 @@
   </head>
 
   <body>
-    <%= yield %>
+    <% if current_user.present? %>
+      <div
+        class="dashboard-container"
+        data-controller="app-shell"
+        data-action="keydown@window->app-shell#closeOnEscape">
+        <%= render "layouts/dashboard_shared/sidebar" %>
+        <button
+          type="button"
+          class="sidebar-backdrop"
+          aria-label="Fechar menu"
+          data-app-shell-target="backdrop"
+          data-action="app-shell#closeSidebar"
+          hidden></button>
+
+        <div class="main-content">
+          <%= render "layouts/dashboard_shared/topbar" %>
+          <%= yield %>
+        </div>
+      </div>
+    <% else %>
+      <%= yield %>
+    <% end %>
   </body>
 </html>

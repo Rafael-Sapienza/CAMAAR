@@ -57,7 +57,7 @@
   <% end %>
 
   <% nova_utilizacao = UtilizacaoQuestao.new %>
-  <% nova_utilizacao.build_questao(tipo: :discursiva) %>
+  <% nova_utilizacao.build_questao(tipo: nil) %>
 
   <template data-template-form-target="questionTemplate">
     <%= f.fields_for :utilizacoes_questoes, nova_utilizacao, child_index: "NEW_QUESTION" do |utilizacao_form| %>
@@ -78,9 +78,10 @@
   </template>
 
   <div class="template-form__actions">
+    <%= link_to "Voltar aos templates", templates_path, class: "app-button app-button--secondary" %>
     <%= f.submit(
           template.persisted? ? "Atualizar template" : "Criar template",
-          class: "template-form__submit"
+          class: "app-button"
         ) %>
   </div>
 <% end %>

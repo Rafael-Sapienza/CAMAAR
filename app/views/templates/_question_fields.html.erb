@@ -10,7 +10,9 @@
   <%= utilizacao_form.hidden_field :numero, data: { template_form_question_number: true } %>
 
   <div class="template-question__content">
+    
     <div class="template-question__header">
+    <div class="template-question__header-number">
       Questão <span data-template-form-question-position></span>
     </div>
 
@@ -21,18 +23,35 @@
         <%= questao_form.hidden_field :id, data: { template_form_questao_id: true } %>
       <% end %>
 
-      <div class="template-form__field template-form__field--compact">
-        <%= questao_form.label :tipo %>
+      <div class="template-form__select" data-controller="dropdown">
         <%= questao_form.select(
-              :tipo,
+          :tipo,
               [["Discursiva", "discursiva"], ["Objetiva", "objetiva"]],
-              {},
+              { prompt: "Tipo de questão" },
               data: {
-                action: "template-question#toggleOptions",
+                action: "
+                  click->dropdown#toggle
+                  blur->dropdown#close
+                  change->template-question#toggleOptions
+                ",
                 template_question_target: "tipo"
-              }
+              },
+              required: true,
+              aria: { label: "Tipo de questão" }
             ) %>
+
+        <svg class="template-form__select-arrow" viewBox="0 0 16 16" aria-hidden="true">
+          <path
+            d="m4 6 4 4 4-4"
+            fill="none"
+            stroke="#6A1B60"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.75"
+          />
+        </svg>
       </div>
+    </div>
 
       <div class="template-form__field">
         <%= questao_form.label :enunciado %>
@@ -51,17 +70,17 @@
               <%= render "option_fields", opcao_form: opcao_form, edicao: edicao %>
             <% end %>
           </div>
-        </fieldset>
-
-        <%= button_tag(
-              type: "button",
-              class: "template-form__icon-button template-form__add-button",
-              data: { action: "template-form#addOption" },
-              title: "Adicionar opção",
-              aria: { label: "Adicionar opção" }
-            ) do %>
-          <%= image_tag "icons/plus.svg", alt: "", width: 16, height: 16 %>
-        <% end %>
+          
+          <%= button_tag(
+                type: "button",
+                class: "template-form__icon-button template-form__add-option-button",
+                data: { action: "template-form#addOption" },
+                title: "Adicionar opção",
+                aria: { label: "Adicionar opção" }
+              ) do %>
+            <%= image_tag "icons/plus.svg", alt: "", width: 16, height: 16 %>
+          <% end %>
+          </fieldset>
       </div>
     <% end %>
   </div>
