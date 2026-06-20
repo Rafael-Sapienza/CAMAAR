@@ -12,7 +12,7 @@ Funcionalidade: Visualizar formulários criados
     Dado que existem formulários criados para o semestre atual
     Quando eu acesso o painel de gerenciamento de formulários
     Então eu devo ver uma lista com todos os formulários criados, exibindo o template base, a turma e o público-alvo de cada um
-    E cada formulário listado deve exibir um botão "Gerar Relatório de Respostas"
+    E ao acessar um formulário listado devo ver o botão "Gerar Relatório de Respostas"
 
   @sad
   Cenário: Visualizar listagem quando nenhum formulário foi criado ainda
