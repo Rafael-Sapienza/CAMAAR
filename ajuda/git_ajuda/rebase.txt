@@ -1,0 +1,1 @@
+git rebase -i origin/sprint-3 : abre o terminal iterativo do gitlens para planejar o rebase
