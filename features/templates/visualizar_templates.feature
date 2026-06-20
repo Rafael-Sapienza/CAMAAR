@@ -29,3 +29,12 @@ Funcionalidade: Visualizar templates criados
     E que estou autenticado como usuário não administrador
     Quando eu tento acessar a página de templates
     Então devo ver a mensagem "Você não tem permissão para visualizar templates."
+
+  @sad
+  Cenário: Administrador só pode excluir templates criados por ele
+    Dado que estou autenticado como administrador
+    E que existe um template chamado "Meu Template" criado por mim
+    E que existe um template chamado "Template de Outro Administrador" criado por outro administrador
+    Quando eu acesso a página de templates
+    Então devo ver a ação de excluir o template "Meu Template"
+    E não devo ver a ação de excluir o template "Template de Outro Administrador"

@@ -49,6 +49,14 @@ When(/^eu acesso a página de criação de template$/) do
   end
 end
 
+Given(/^que existe um template chamado "([^"]+)" criado por outro administrador$/) do |titulo|
+  outro_admin = usuario_administrador(departamento: "Outro Departamento")
+  estado[:template_de_outro_administrador] = template_com_titulo(
+    titulo,
+    adm: outro_admin.perfil_adm
+  )
+end
+
 When(/^eu tento acessar a página de criação de template$/) do
   preparar_formulario_de_template
 
@@ -227,7 +235,12 @@ When(/^confirmo a exclusão do template$/) do
     next
   end
 
-  template.destroy!
+  within(%([data-template-id="#{template.id}"])) do
+    find(%(button[aria-label="Excluir template #{template.titulo}"])).click
+  end
+
+  expect(page).to have_current_path(templates_path)
+  expect(page).to have_content("Template excluído com sucesso.")
   estado[:mensagens] << "o template foi removido com sucesso"
 end
 
@@ -279,18 +292,34 @@ Then(/^não devo ver o formulário de criação de template$/) do
   expect(estado[:formulario_visivel]).to be(false)
 end
 
+Then(/^devo ver a ação de excluir o template "([^"]+)"$/) do |titulo|
+  template = Template.find_by!(titulo: titulo)
+
+  within(%([data-template-id="#{template.id}"])) do
+    expect(page).to have_button("Excluir template #{titulo}")
+  end
+end
+
+Then(/^não devo ver a ação de excluir o template "([^"]+)"$/) do |titulo|
+  template = Template.find_by!(titulo: titulo)
+
+  within(%([data-template-id="#{template.id}"])) do
+    expect(page).to have_no_button("Excluir template #{titulo}")
+  end
+end
+
 Then(
   /^o formulário criado anteriormente deve continuar contendo a questão "([^"]+)"$/
-) do |_enunciado|
-  pendente_por_app_incompleto!(
-    "snapshot de questões do formulário criado a partir de template"
-  )
+) do |enunciado|
+  formulario = estado.fetch(:formulario_anterior).reload
+
+  expect(formulario.questoes.where(enunciado: enunciado)).to exist
 end
 
 Then(
   /^o formulário criado anteriormente não deve conter a questão "([^"]+)"$/
-) do |_enunciado|
-  pendente_por_app_incompleto!(
-    "snapshot de questões do formulário criado a partir de template"
-  )
+) do |enunciado|
+  formulario = estado.fetch(:formulario_anterior).reload
+
+  expect(formulario.questoes.where(enunciado: enunciado)).not_to exist
 end
