@@ -21,7 +21,7 @@
       <% @avaliacoes_pendentes.each do |avaliacao| %>
         <tr>
           <td><%= avaliacao.formulario.turma.nome_exibicao %></td>
-          <td>Não respondido</td>
+          <td><%= avaliacao.nao_respondido? ? "Não respondido" : l(avaliacao.respondido_em, format: :short) %></td>
           <td><%= link_to "Responder", responder_avaliacao_path(avaliacao) %></td>
         </tr>
       <% end %>

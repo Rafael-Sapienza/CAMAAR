@@ -1,1 +1,81 @@
-<%= link_to 'Exportar CSV', exportar_csv_formulario_path(@formulario), class: 'btn btn-primary' %>
+<main class="template-page">
+  <h1><%= @formulario.template.titulo %></h1>
+
+  <details class="template-form__metadata" open>
+    <summary class="template-form__metadata-summary">
+      Dados do formulário
+    </summary>
+
+    <div class="template-form__metadata-fields">
+      <div class="template-form__field">
+        <label>Template</label>
+        <p><%= @formulario.template.titulo %></p>
+      </div>
+
+      <div class="template-form__field">
+        <label>Turma</label>
+        <p><%= @formulario.turma.nome_exibicao %></p>
+      </div>
+
+      <div class="template-form__field">
+        <label>Público-alvo</label>
+        <p><strong><%= @formulario.docentes? ? "Docentes" : "Discentes" %></strong></p>
+      </div>
+
+      <div class="template-form__field">
+        <label>Criado em</label>
+        <p><%= l(@formulario.criado_em, format: :long) %></p>
+      </div>
+    </div>
+  </details>
+
+  <hr>
+
+  <h3>Questões</h3>
+
+  <div class="template-form__questions">
+    <% @formulario.questoes.order(:id).each_with_index do |questao, index| %>
+      <div class="template-question">
+        <div class="template-question__content">
+          <div class="template-question__header">
+            Questão <span><%= index + 1 %></span>
+          </div>
+
+          <div class="template-form__field template-form__field--compact">
+            <label>Tipo</label>
+            <p><strong><%= questao.discursiva? ? "Discursiva" : "Objetiva" %></strong></p>
+          </div>
+
+          <div class="template-form__field">
+            <label>Enunciado</label>
+            <p><%= simple_format(questao.enunciado) %></p>
+          </div>
+
+          <% if questao.objetiva? && questao.opcoes.any? %>
+            <fieldset class="template-options">
+              <legend>Opções</legend>
+
+              <div class="template-options__list">
+                <% questao.opcoes.ordenadas.each do |opcao| %>
+                  <div class="template-option">
+                    <div class="template-option__content">
+                      <span class="template-option__label">
+                        Opção <span><%= opcao.numero %></span>
+                      </span>
+                      <p><%= opcao.texto %></p>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            </fieldset>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="template-form__actions">
+    <%= link_to "Gerar Relatório de Respostas", exportar_csv_formulario_path(@formulario), class: "template-form__submit" %>
+    <%= button_tag "Voltar", onclick: "window.history.back();", class: "template-form__submit", type: :button %>
+  </div>
+</main>

@@ -1,32 +1,5 @@
-<h1>Criar Formulário</h1>
+<main class="template-page">
+  <h1>Novo Formulário</h1>
 
-<% if flash[:notice] %>
-  <p><%= flash[:notice] %></p>
-<% end %>
-
-<% if flash[:alert] %>
-  <p><%= flash[:alert] %></p>
-<% end %>
-
-<%= form_with url: preparar_formularios_path do |form| %>
-  <div>
-    <label for="template_id">Template</label>
-    <%= select_tag :template_id,
-                   options_from_collection_for_select(@templates, :id, :titulo),
-                   prompt: "Selecione um template" %>
-  </div>
-
-  <div>
-    <p>Turmas</p>
-    <% @turmas.each do |turma| %>
-      <div>
-        <label>
-          <%= check_box_tag "turma_ids[]", turma.id, false, id: "turma_#{turma.id}" %>
-          <%= turma.nome_exibicao %>
-        </label>
-      </div>
-    <% end %>
-  </div>
-
-  <%= form.submit "Continuar" %>
-<% end %>
+  <%= render "form", templates: @templates, turmas: @turmas %>
+</main>

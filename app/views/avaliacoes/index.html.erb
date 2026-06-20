@@ -6,7 +6,7 @@
       <li>
         <p><strong><%= pendencia.formulario.turma.nome_exibicao %></strong></p>
         <p><%= pendencia.formulario.template.titulo %></p>
-        <p>Não respondido</p>
+        <p><%= pendencia.nao_respondido? ? "Não respondido" : l(pendencia.respondido_em, format: :short) %></p>
       </li>
     <% end %>
   </ul>

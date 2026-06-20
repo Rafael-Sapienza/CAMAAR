@@ -1,28 +1,82 @@
-<h1>Gerenciamento de Formulários</h1>
+<main class="template-page">
+  <h1>Formulários</h1>
 
-<% if @formularios.any? %>
-  <table>
-    <thead>
-      <tr>
-        <th>Template</th>
-        <th>Turma</th>
-        <th>Público-alvo</th>
-        <th>Ação</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @formularios.each do |formulario| %>
-        <tr>
-          <td><%= formulario.template.titulo %></td>
-          <td><%= formulario.turma.nome_exibicao %></td>
-          <td><%= formulario.docentes? ? "Docentes" : "Discentes" %></td>
-          <td>
-            <%= button_to "Gerar Relatório de Respostas", "#", method: :get %>
-          </td>
-        </tr>
+  <% if flash[:notice] %>
+    <p><%= flash[:notice] %></p>
+  <% end %>
+
+  <% if flash[:alert] %>
+    <p><%= flash[:alert] %></p>
+  <% end %>
+
+  <section id="meus-formularios">
+    <h2>Meus formulários</h2>
+
+    <% if @user_formularios.any? %>
+      <div class="template-form__cards">
+        <% @user_formularios.each do |formulario| %>
+          <%= link_to formulario_path(formulario), class: "template-form__card" do %>
+            <div>
+              <h3 class="template-form__card-title"><%= formulario.template.titulo %></h3>
+              <p class="template-form__card-description"><%= formulario.turma.nome_exibicao %></p>
+            </div>
+            <div class="template-form__card-info">
+              <div class="template-form__card-info-item">
+                <span>👥</span>
+                <strong><%= formulario.docentes? ? "Docentes" : "Discentes" %></strong>
+              </div>
+              <div class="template-form__card-info-item">
+                <span>📋</span>
+                <strong><%= formulario.avaliacoes.pendentes.count %></strong>
+                pendentes
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+        <%= link_to new_formulario_path, class: "template-form__add-template-button", title: "Criar novo formulário", aria: { label: "Criar novo formulário" } do %>
+          <%= image_tag "icons/plus.svg", alt: "", width: 24, height: 24 %>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="template-form__cards">
+        <p style="width: 100%; text-align: center; margin: 24px 0;">Nenhum formulário criado para este semestre</p>
+        <%= link_to new_formulario_path, class: "template-form__add-template-button", title: "Criar novo formulário", aria: { label: "Criar novo formulário" } do %>
+          <%= image_tag "icons/plus.svg", alt: "", width: 24, height: 24 %>
+        <% end %>
+      </div>
+    <% end %>
+  </section>
+
+  <hr>
+
+  <h2>Outros formulários</h2>
+  <% if @other_formularios.any? %>
+    <div class="template-form__cards">
+      <% @other_formularios.each do |formulario| %>
+        <%= link_to formulario_path(formulario), class: "template-form__card" do %>
+          <div>
+            <h3 class="template-form__card-title"><%= formulario.template.titulo %></h3>
+            <p class="template-form__card-description"><%= formulario.turma.nome_exibicao %></p>
+          </div>
+          <div class="template-form__card-info">
+            <div class="template-form__card-info-item">
+              <span>👥</span>
+              <strong><%= formulario.docentes? ? "Docentes" : "Discentes" %></strong>
+            </div>
+            <div class="template-form__card-info-item">
+              <span>📋</span>
+              <strong><%= formulario.avaliacoes.pendentes.count %></strong>
+              pendentes
+            </div>
+          </div>
+        <% end %>
       <% end %>
-    </tbody>
-  </table>
-<% else %>
-  <p>Nenhum formulário criado para este semestre</p>
-<% end %>
+    </div>
+  <% else %>
+    <p>Nenhum formulário de outros administradores encontrado</p>
+  <% end %>
+
+  <div class="template-form__actions">
+    <%= link_to "Voltar", gerenciamento_path, class: "template-form__submit" %>
+  </div>
+</main>
