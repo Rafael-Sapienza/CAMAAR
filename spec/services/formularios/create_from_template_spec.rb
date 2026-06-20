@@ -85,12 +85,43 @@ RSpec.describe Formularios::CreateFromTemplate do
       expect(Formulario.count).to eq(0)
     end
 
-    it "levanta erro quando turma já possui formulário" do
+    it "levanta erro quando turma já possui formulário para o mesmo template e público-alvo" do
       call_service(turma_ids: [ turma_a.id ])
 
       expect do
         call_service(turma_ids: [ turma_a.id ])
-      end.to raise_error(Formularios::Error, "Uma ou mais turmas selecionadas já possuem formulário")
+      end.to raise_error(
+        Formularios::Error,
+        "Uma ou mais turmas selecionadas já possuem formulário para este template e público-alvo"
+      )
+    end
+
+    it "permite criar outro formulário com o mesmo template para público-alvo diferente" do
+      call_service(turma_ids: [ turma_a.id ], publico_alvo: :docentes)
+
+      expect do
+        call_service(turma_ids: [ turma_a.id ], publico_alvo: :discentes)
+      end.not_to raise_error
+
+      expect(turma_a.reload.formularios.count).to eq(2)
+      expect(turma_a.formularios.pluck(:template_id)).to eq([ template.id, template.id ])
+    end
+
+    it "permite criar formulário com template diferente para a mesma turma e público-alvo" do
+      outro_template = create_template_with_questoes(titulo: "Outro Template", adm: perfil_adm)
+      call_service(turma_ids: [ turma_a.id ], publico_alvo: :docentes)
+
+      expect do
+        described_class.call(
+          template_id: outro_template.id,
+          turma_ids: [ turma_a.id ],
+          publico_alvo: :docentes,
+          perfil_adm: perfil_adm
+        )
+      end.not_to raise_error
+
+      expect(turma_a.reload.formularios.count).to eq(2)
+      expect(turma_a.formularios.pluck(:template_id)).to contain_exactly(template.id, outro_template.id)
     end
 
     it "persiste o público-alvo informado" do

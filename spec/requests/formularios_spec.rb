@@ -8,9 +8,12 @@ RSpec.describe "Formularios", type: :request do
   let(:turma_a) { create_turma(nome_materia: "MDS", numero: 1, departamento: departamento) }
   let(:turma_b) { create_turma(nome_materia: "IHC", numero: 2, departamento: departamento) }
 
-  def preparar_formulario(template_id: template.id, turma_ids: [ turma_a.id, turma_b.id ])
-    post preparar_formularios_path,
-         params: { template_id: template_id, turma_ids: turma_ids }
+  def criar_formulario_params(template_id: template.id, turma_ids: [ turma_a.id, turma_b.id ], publico_alvo: "docentes")
+    {
+      template_id: template_id,
+      turma_ids: turma_ids,
+      publico_alvo: publico_alvo
+    }
   end
 
   describe "GET /formularios" do
@@ -229,34 +232,22 @@ RSpec.describe "Formularios", type: :request do
 
     it "retorna erro quando público-alvo não é informado" do
       sign_in_as(admin)
-      preparar_formulario(turma_ids: [ turma_a.id ])
 
       expect do
-        post formularios_path, params: { publico_alvo: "" }
+        post formularios_path, params: criar_formulario_params(turma_ids: [ turma_a.id ], publico_alvo: "")
       end.not_to change(Formulario, :count)
 
-      expect(response).to redirect_to(publicar_formularios_path)
-      follow_redirect!
+      expect(response).to have_http_status(:unprocessable_entity)
       expect(response.body).to include("Por favor, selecione o público-alvo do formulário")
-    end
-
-    it "redireciona para new quando sessão está vazia" do
-      sign_in_as(admin)
-
-      post formularios_path, params: { publico_alvo: "docentes" }
-
-      expect(response).to redirect_to(new_formulario_path)
-      follow_redirect!
-      expect(response.body).to include("Selecione um template e as turmas antes de publicar")
     end
 
     it "bloqueia usuário não administrador" do
       sign_in_as(usuario)
 
-      post formularios_path, params: { publico_alvo: "docentes" }
+      post formularios_path, params: criar_formulario_params
 
       expect(response).to redirect_to("/")
-      expect(flash[:alert]).to eq("Acesso não autorizado")
+      expect(flash[:alert]).to eq("Você não tem permissão para realizar esta ação.")
       expect(Formulario.count).to eq(0)
     end
   end
