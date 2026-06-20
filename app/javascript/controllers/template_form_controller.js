@@ -179,8 +179,21 @@ export default class extends Controller {
 
       option.querySelector("[data-template-form-option-number]").value = number
       option.querySelector("[data-template-form-option-position]").textContent =
-        number
+        this.optionLetter(number)
     })
+  }
+
+  optionLetter(number) {
+    let result = ""
+    let current = number
+
+    while (current > 0) {
+      current -= 1
+      result = String.fromCharCode(97 + (current % 26)) + result
+      current = Math.floor(current / 26)
+    }
+
+    return result
   }
 
   get questionElements() {
