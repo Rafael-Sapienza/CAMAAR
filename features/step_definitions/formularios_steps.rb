@@ -6,12 +6,6 @@ def administrador_formularios
   @admin
 end
 
-def preparar_sessao_formulario(template:, turmas:)
-  page.driver.post preparar_formularios_path,
-    template_id: template.id,
-    turma_ids: turmas.map(&:id)
-end
-
 Dado("que existem formulários criados para o semestre atual") do
   administrador_formularios
   @template = criar_template_com_questoes(titulo: "Avaliação de Disciplina")
@@ -56,11 +50,6 @@ end
 
 Dado("selecionei a turma {string}") do |nome_turma|
   @turma = criar_turma_do_nome_exibicao(nome_turma)
-  preparar_sessao_formulario(template: @template, turmas: [ @turma ])
-end
-
-Dado("que estou na etapa de definição de público-alvo") do
-  visit publicar_formularios_path
 end
 
 Quando("eu seleciono o template {string}") do |titulo|
@@ -72,13 +61,17 @@ Quando("seleciono as turmas {string} e {string}") do |nome_turma_a, nome_turma_b
   check nome_turma_b
 end
 
+Quando("seleciono a turma {string}") do |nome_turma|
+  check nome_turma
+end
+
 Quando("não seleciono nenhuma turma") do
   page.all('input[name="turma_ids[]"]').each do |checkbox|
     checkbox.set(false) if checkbox.checked?
   end
 end
 
-Quando(/^clico em "(Continuar|Confirmar Publicação)"$/) do |botao|
+Quando(/^clico em "(Publicar formulário|Continuar|Confirmar Publicação)"$/) do |botao|
   click_button botao
 end
 
@@ -97,7 +90,7 @@ Quando("eu não seleciono nem {string} e nem {string}") do |_, _|
 end
 
 Quando("confirmo a publicação do formulário") do
-  click_button "Confirmar Publicação"
+  click_button "Publicar formulário"
 end
 
 Quando("eu acesso o painel de gerenciamento de formulários") do
@@ -129,7 +122,7 @@ Então("o formulário deve ser gerado com sucesso para ambas as turmas") do
 end
 
 Então("eu devo ver uma lista com todos os formulários criados, exibindo o template base, a turma e o público-alvo de cada um") do
-  expect(page).to have_css("table tbody tr", count: @formularios.size)
+  expect(page).to have_css(".template-form__card", count: @formularios.size)
 
   @formularios.each do |formulario|
     expect(page).to have_content(formulario.template.titulo)
@@ -139,12 +132,21 @@ Então("eu devo ver uma lista com todos os formulários criados, exibindo o temp
   end
 end
 
+Então("ao acessar um formulário listado devo ver o botão {string}") do |texto_botao|
+  first(".template-form__card").click
+  expect(page).to have_link(texto_botao)
+end
+
 Então("cada formulário listado deve exibir um botão {string}") do |texto_botao|
-  expect(page).to have_button(texto_botao, count: @formularios.size)
+  @formularios.each do |formulario|
+    visit formulario_path(formulario)
+    expect(page).to have_link(texto_botao)
+    visit formularios_path
+  end
 end
 
 Então("eu devo ver a listagem vazia") do
-  expect(page).not_to have_css("table tbody tr")
+  expect(page).not_to have_css(".template-form__card")
 end
 
 Então("a mensagem {string} deve ser exibida na tela") do |mensagem|
