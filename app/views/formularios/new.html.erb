@@ -1,5 +1,11 @@
 <main class="template-page">
   <h1>Novo Formulário</h1>
 
-  <%= render "form", templates: @templates, turmas: @turmas %>
+  <%= render "form",
+             templates_proprios: @templates_proprios,
+             templates_outros: @templates_outros,
+             materias: @materias,
+             turmas: @turmas,
+             materia_selecionada: @materia_selecionada,
+             mostrar_todas_turmas: @mostrar_todas_turmas %>
 </main>

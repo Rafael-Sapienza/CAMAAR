@@ -59,6 +59,19 @@ dados['usuarios_admin'].each do |admin_json|
       p.departamento_id = id_real
     end
 
+    # Turmas lecionadas (opcional: admin-docente pode não estar lecionando nada)
+    turmas_lecionadas_json = admin_json['turmas_lecionadas'] || []
+
+    turmas_lecionadas_json.each do |mat_json|
+      materia = Materia.find_by(codigo: mat_json['materia_codigo'])
+      raise "Matéria '#{mat_json['materia_codigo']}' não encontrada para o admin #{admin_json['matricula']}." if materia.nil?
+
+      turma = Turma.find_by(materia_id: materia.id, numero: mat_json['numero_turma'], ano: 2026, semestre: 1)
+      raise "Turma nº #{mat_json['numero_turma']} da matéria '#{materia.nome}' não encontrada para o admin #{admin_json['matricula']}." if turma.nil?
+
+      ParticipacaoTurma.find_or_create_by!(usuario_id: usuario.id, turma_id: turma.id, tipo_participacao: :docente)
+    end
+
   when 'discente'
     # PerfilDiscente não recebe departamento
     PerfilDiscente.find_or_create_by!(id: usuario.id)

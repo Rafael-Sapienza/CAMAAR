@@ -123,9 +123,31 @@ class DashboardController < ApplicationController
           usuario.senha = ""
         end
         usuario.save!
+
         perfil = PerfilDocente.find_or_initialize_by(id: usuario.id)
         perfil.departamento_id = docente_json["departamento_id_temp"]
         perfil.save!
+
+        turmas_docente_ids = []
+        (docente_json["turmas_lecionadas"] || []).each do |mat_json|
+          materia = Materia.find_by(codigo: mat_json["materia_codigo"])
+          if materia.nil?
+            raise "Matéria com código '#{mat_json['materia_codigo']}' não existe no sistema."
+          end
+
+          turma = Turma.find_by(materia_id: materia.id, numero: mat_json["numero_turma"], ano: 2026, semestre: 1)
+          if turma.nil?
+            raise "Turma nº #{mat_json['numero_turma']} da matéria '#{materia.nome}' não foi localizada no sistema."
+          end
+
+          turmas_docente_ids << turma.id
+          ParticipacaoTurma.find_or_create_by!(
+            usuario_id: usuario.id,
+            turma_id: turma.id,
+            tipo_participacao: :docente
+          )
+        end
+        usuario.participacoes_turma.docentes.where.not(turma_id: turmas_docente_ids).destroy_all
       end
     rescue StandardError => e
       erros_importacao << "Docente #{docente_json['nome']} (Matrícula: #{matricula}): #{e.message}"

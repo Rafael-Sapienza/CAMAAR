@@ -1,6 +1,7 @@
 module Formularios
   class CreateFromTemplate
     SEM_TURMAS = "É necessário selecionar pelo menos uma turma"
+    SEM_TEMPLATE = "Selecione um template"
     SEM_QUESTOES = "O template deve possuir pelo menos uma questão"
     TURMAS_INVALIDAS = "Uma ou mais turmas selecionadas são inválidas"
     TURMA_COM_FORMULARIO = "Uma ou mais turmas selecionadas já possuem formulário para este template e público-alvo"
@@ -63,7 +64,10 @@ module Formularios
     end
 
     def validate_template!
+      raise Error, SEM_TEMPLATE if template_id.blank?
       raise Error, SEM_QUESTOES if template.utilizacoes_questoes.raizes.none?
+    rescue ActiveRecord::RecordNotFound
+      raise Error, SEM_TEMPLATE
     end
 
     def validate_turmas!
@@ -96,7 +100,7 @@ module Formularios
     end
 
     def turmas
-      @turmas ||= Turma.do_semestre_atual.where(id: turma_ids)
+      @turmas ||= Turma.where(id: turma_ids)
     end
 
     def copy_questoes_from_template!(formulario)

@@ -28,8 +28,7 @@ class FormulariosController < ApplicationController
     @formulario = Formulario.new(adm: current_administrador)
     authorize! @formulario
 
-    @templates = Template.all
-    @turmas = turmas_do_departamento
+    carregar_opcoes_de_selecao
   end
 
   def create
@@ -43,11 +42,10 @@ class FormulariosController < ApplicationController
     )
 
     redirect_to formularios_path,
-      notice: "Formulário criado com sucesso para as turmas selecionadas"
-  rescue Formularios::Error, ActiveRecord::RecordInvalid => e
-    @templates = Template.all
-    @turmas = turmas_do_departamento
-    flash.now[:alert] = e.message
+      notice: "Formulário criado com sucesso para a turma selecionada"
+  rescue Formularios::Error, ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound => e
+    carregar_opcoes_de_selecao
+    flash.now[:alert] = e.is_a?(ActiveRecord::RecordNotFound) ? "Template ou turma não encontrados" : e.message
     render :new, status: :unprocessable_entity
   end
 
@@ -78,11 +76,39 @@ class FormulariosController < ApplicationController
 
   private
 
-  def turmas_do_departamento
-    Turma
-      .do_semestre_atual
+  def carregar_opcoes_de_selecao
+    admin_ids_do_departamento = PerfilAdm
+      .where(departamento_id: current_administrador.departamento_id)
+      .pluck(:id)
+
+    @templates_proprios = Template.where(adm_id: current_administrador.id).order(:titulo)
+    @templates_outros = Template
+      # .where(adm_id: admin_ids_do_departamento)
+      .where.not(adm_id: current_administrador.id)
+      .order(:titulo)
+
+    @materias = materias_do_departamento
+    @materia_selecionada = params[:materia_id].presence
+    @mostrar_todas_turmas = ActiveModel::Type::Boolean.new.cast(params[:todas_turmas])
+    @turmas = turmas_do_departamento(
+      materia_id: @materia_selecionada,
+      todas: @mostrar_todas_turmas
+    )
+  end
+
+  def materias_do_departamento
+    Materia.do_departamento(current_administrador.departamento).order(:nome)
+  end
+
+  def turmas_do_departamento(materia_id: nil, todas: false)
+    escopo = Turma
       .do_departamento(current_administrador.departamento)
       .includes(:materia)
+      .order("materias.nome", :numero)
+
+    escopo = escopo.do_semestre_atual unless todas
+    escopo = escopo.where(materia_id: materia_id) if materia_id.present?
+    escopo
   end
 
   def set_formulario

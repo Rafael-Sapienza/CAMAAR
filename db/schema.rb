@@ -10,12 +10,13 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_16_180200) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_20_191000) do
   create_table "avaliacoes", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.integer "formulario_id", null: false
     t.integer "participacao_turma_id", null: false
     t.datetime "respondido_em"
+    t.integer "responida", default: 0, null: false
     t.datetime "updated_at", null: false
     t.index ["formulario_id"], name: "index_avaliacoes_on_formulario_id"
     t.index ["participacao_turma_id", "formulario_id"], name: "index_avaliacoes_on_participacao_turma_id_and_formulario_id", unique: true
@@ -39,6 +40,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_16_180200) do
     t.datetime "updated_at", null: false
     t.index ["adm_id"], name: "index_formularios_on_adm_id"
     t.index ["template_id"], name: "index_formularios_on_template_id"
+    t.index ["turma_id", "template_id", "publico_alvo"], name: "index_formularios_on_turma_id_and_template_id_and_publico_alvo", unique: true
     t.index ["turma_id"], name: "index_formularios_on_turma_id"
   end
 
