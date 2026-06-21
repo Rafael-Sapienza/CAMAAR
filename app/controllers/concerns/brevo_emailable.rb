@@ -7,7 +7,7 @@ module BrevoEmailable
   REMETENTE = { "name" => "CAMAAR Support", "email" => "rafaelsapienzapinheiro@gmail.com" }.freeze
 
   def chamar_api_brevo(payload, contexto: "")
-    api_key = brevo_api_key
+    api_key = Rails.application.credentials.dig(:brevo, :api_key)
     unless api_key.present?
       Rails.logger.error "[BREVO] #{contexto} — Token de API não configurado."
       return false

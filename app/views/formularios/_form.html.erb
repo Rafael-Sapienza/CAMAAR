@@ -1,3 +1,20 @@
+<%= form_with url: new_formulario_path, method: :get, class: "template-form__filtro" do %>
+  <div class="template-form__field">
+    <label for="materia_id">Filtrar por matéria</label>
+    <%= select_tag :materia_id,
+                   options_from_collection_for_select(materias, :id, :nome, materia_selecionada),
+                   include_blank: "Todas as matérias",
+                   onchange: "this.form.requestSubmit()" %>
+  </div>
+
+  <div class="template-form__field">
+    <label>
+      <%= check_box_tag :todas_turmas, "1", mostrar_todas_turmas, onchange: "this.form.requestSubmit()" %>
+      Mostrar turmas de todos os semestres
+    </label>
+  </div>
+<% end %>
+
 <%= form_with url: formularios_path, class: "template-form" do |form| %>
   <% if flash[:alert] %>
     <div>
@@ -13,20 +30,50 @@
     <div class="template-form__metadata-fields">
       <div class="template-form__field">
         <label for="template_id">Template</label>
-        <%= select_tag :template_id,
-                       options_from_collection_for_select(templates, :id, :titulo),
-                       prompt: "Selecione um template" %>
+
+        <% if templates_proprios.empty? && templates_outros.empty? %>
+          <p>Nenhum template disponível. Crie um template antes de montar um formulário.</p>
+        <% else %>
+          <select name="template_id" id="template_id">
+            <option value="">Selecione um template</option>
+
+            <% if templates_proprios.any? %>
+              <optgroup label="Meus templates">
+                <% templates_proprios.each do |template| %>
+                  <option value="<%= template.id %>"><%= template.titulo %></option>
+                <% end %>
+              </optgroup>
+            <% end %>
+
+            <% if templates_outros.any? %>
+              <optgroup label="Templates de outros admins">
+                <% templates_outros.each do |template| %>
+                  <option value="<%= template.id %>"><%= template.titulo %></option>
+                <% end %>
+              </optgroup>
+            <% end %>
+          </select>
+        <% end %>
       </div>
 
       <div class="template-form__field">
-        <p>Turmas</p>
-        <% turmas.each do |turma| %>
-          <div>
-            <label>
-              <%= check_box_tag "turma_ids[]", turma.id, false, id: "turma_#{turma.id}" %>
-              <%= turma.nome_exibicao %>
-            </label>
-          </div>
+        <p>Turma</p>
+        <% if turmas.any? %>
+          <% turmas.group_by(&:materia).each do |materia, turmas_da_materia| %>
+            <fieldset>
+              <legend><%= materia.nome %> (<%= materia.codigo %>)</legend>
+              <% turmas_da_materia.each do |turma| %>
+                <div>
+                  <label>
+                    <%= radio_button_tag "turma_ids[]", turma.id, false, id: "turma_#{turma.id}" %>
+                    <%= turma.nome_exibicao %>
+                  </label>
+                </div>
+              <% end %>
+            </fieldset>
+          <% end %>
+        <% else %>
+          <p>Nenhuma turma encontrada para o filtro selecionado.</p>
         <% end %>
       </div>
 
