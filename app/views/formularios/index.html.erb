@@ -1,37 +1,21 @@
-<main class="template-page">
+<main class="app-page template-page">
   <h1>Formulários</h1>
 
-  <% if flash[:notice] %>
-    <p><%= flash[:notice] %></p>
+  <% if notice %>
+    <p class="app-alert app-alert--success"><%= notice %></p>
   <% end %>
 
-  <% if flash[:alert] %>
-    <p><%= flash[:alert] %></p>
+  <% if alert %>
+    <p class="app-alert app-alert--error"><%= alert %></p>
   <% end %>
 
-  <section id="meus-formularios">
+  <section id="meus-formularios" class="template-section">
     <h2>Meus formulários</h2>
 
     <% if @user_formularios.any? %>
       <div class="template-form__cards">
         <% @user_formularios.each do |formulario| %>
-          <%= link_to formulario_path(formulario), class: "template-form__card" do %>
-            <div>
-              <h3 class="template-form__card-title"><%= formulario.template.titulo %></h3>
-              <p class="template-form__card-description"><%= formulario.turma.nome_exibicao %></p>
-            </div>
-            <div class="template-form__card-info">
-              <div class="template-form__card-info-item">
-                <span>👥</span>
-                <strong><%= formulario.docentes? ? "Docentes" : "Discentes" %></strong>
-              </div>
-              <div class="template-form__card-info-item">
-                <span>📋</span>
-                <strong><%= formulario.avaliacoes.pendentes.count %></strong>
-                pendentes
-              </div>
-            </div>
-          <% end %>
+          <%= render "card", formulario: formulario %>
         <% end %>
         <%= link_to new_formulario_path, class: "template-form__add-template-button", title: "Criar novo formulário", aria: { label: "Criar novo formulário" } do %>
           <%= image_tag "icons/plus.svg", alt: "", width: 24, height: 24 %>
@@ -39,7 +23,7 @@
       </div>
     <% else %>
       <div class="template-form__cards">
-        <p style="width: 100%; text-align: center; margin: 24px 0;">Nenhum formulário criado para este semestre</p>
+        <p class="app-empty-state template-form__empty-state">Nenhum formulário criado para este semestre</p>
         <%= link_to new_formulario_path, class: "template-form__add-template-button", title: "Criar novo formulário", aria: { label: "Criar novo formulário" } do %>
           <%= image_tag "icons/plus.svg", alt: "", width: 24, height: 24 %>
         <% end %>
@@ -47,36 +31,17 @@
     <% end %>
   </section>
 
-  <hr>
-
-  <h2>Outros formulários</h2>
-  <% if @other_formularios.any? %>
-    <div class="template-form__cards">
-      <% @other_formularios.each do |formulario| %>
-        <%= link_to formulario_path(formulario), class: "template-form__card" do %>
-          <div>
-            <h3 class="template-form__card-title"><%= formulario.template.titulo %></h3>
-            <p class="template-form__card-description"><%= formulario.turma.nome_exibicao %></p>
-          </div>
-          <div class="template-form__card-info">
-            <div class="template-form__card-info-item">
-              <span>👥</span>
-              <strong><%= formulario.docentes? ? "Docentes" : "Discentes" %></strong>
-            </div>
-            <div class="template-form__card-info-item">
-              <span>📋</span>
-              <strong><%= formulario.avaliacoes.pendentes.count %></strong>
-              pendentes
-            </div>
-          </div>
+  <section class="template-section">
+    <h2>Outros formulários</h2>
+    <% if @other_formularios.any? %>
+      <div class="template-form__cards">
+        <% @other_formularios.each do |formulario| %>
+          <%= render "card", formulario: formulario %>
         <% end %>
-      <% end %>
-    </div>
-  <% else %>
-    <p>Nenhum formulário de outros administradores encontrado</p>
-  <% end %>
+      </div>
+    <% else %>
+      <p class="app-empty-state template-form__empty-state">Nenhum formulário de outros administradores encontrado</p>
+    <% end %>
+  </section>
 
-  <div class="template-form__actions">
-    <%= link_to "Voltar", gerenciamento_path, class: "template-form__submit" %>
-  </div>
 </main>
