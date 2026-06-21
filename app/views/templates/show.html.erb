@@ -1,22 +1,52 @@
-<h1><%= @template.titulo %></h1>
+<main class="app-page template-page">
+  <header class="template-page__header">
+    <h1><%= @template.titulo %></h1>
+    <%= link_to "Usar em Formulário", new_formulario_path(template_id: @template.id), class: "app-button app-button--accent" %>
+  </header>
 
-<p><%= @template.descricao %></p>
+  <p class="template-show__description"><%= @template.descricao %></p>
 
-<h3>Questões</h3>
+  <hr>
 
-<% @template.questoes.each do |q| %>
-  <div>
-    <p><strong><%= q.enunciado %></strong></p>
-    <p>Tipo: <%= q.tipo %></p>
+  <div class="template-form__questions">
+    <% @template.questoes_ordenadas.each do |utilizacao| %>
+      <div class="template-question">
+        <div class="template-question__content">
+          <div class="template-question__header">
+            <div class="template-question__header-number">
+              Questão <span><%= utilizacao.numero %></span>
+            </div>
 
-    <% if q.opcoes.any? %>
-      <ul>
-        <% q.opcoes.each do |o| %>
-          <li><%= o.numero %> - <%= o.texto %></li>
-        <% end %>
-      </ul>
+            <p><strong><%= utilizacao.questao.discursiva? ? "Discursiva" : "Objetiva" %></strong></p>
+          </div>
+
+          <%= simple_format(utilizacao.questao.enunciado) %>
+
+          <% if utilizacao.questao.objetiva? && utilizacao.questao.opcoes.any? %>
+            <fieldset class="template-options">
+              <legend>Opções</legend>
+
+              <div class="template-options__list">
+                <% utilizacao.questao.opcoes.ordenadas.each do |opcao| %>
+                  <div class="template-option">
+                    <div class="template-option__content">
+                      <span class="template-option__label">
+                        <%= (opcao.numero.to_i + 96).chr %>
+                      </span>
+                      <p><%= opcao.texto %></p>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            </fieldset>
+          <% end %>
+        </div>
+      </div>
     <% end %>
   </div>
-<% end %>
 
-<%= link_to "Voltar", templates_path %>
+  <div class="template-form__actions">
+    <%= link_to "Voltar aos templates", templates_path, class: "app-button app-button--secondary" %>
+    <%= link_to "Editar", edit_template_path(@template), class: "app-button" %>
+  </div>
+</main>

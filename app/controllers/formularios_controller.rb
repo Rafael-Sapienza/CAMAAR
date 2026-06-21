@@ -6,6 +6,7 @@ class FormulariosController < ApplicationController
   before_action :authenticate_user!
   before_action :require_administrador!, except: :exportar_csv
   before_action :require_administrador_para_exportacao!, only: :exportar_csv
+  before_action :set_formulario, only: %i[show exportar_csv]
 
   def index
     @formularios = Formulario
@@ -15,15 +16,24 @@ class FormulariosController < ApplicationController
       .includes(:template, turma: :materia)
   end
 
+  def show
+  end
+
   def new
-    @templates = Template.all
-    @turmas = Turma.do_semestre_atual.sem_formulario.includes(:materia)
+    @templates = policy_scope(Template).recentes
+    @template_selecionado = @templates.find_by(id: params[:template_id])
+    @turmas = Turma
+      .do_departamento(current_administrador.departamento)
+      .do_semestre_atual
+      .sem_formulario
+      .includes(:materia)
   end
 
   def preparar
     Formularios::CreateFromTemplate.validate_preparacao!(
       template_id: params[:template_id],
-      turma_ids: params[:turma_ids]
+      turma_ids: params[:turma_ids],
+      perfil_adm: current_administrador
     )
 
     session[:formulario_preparacao] = {
@@ -75,7 +85,6 @@ class FormulariosController < ApplicationController
   end
 
   def exportar_csv
-    @formulario = Formulario.find(params[:id])
     avaliacoes = @formulario.avaliacoes
       .joins(:respostas)
       .distinct
@@ -84,7 +93,7 @@ class FormulariosController < ApplicationController
         respostas: [ :questao, :texto, { opcoes_escolhidas: :opcao } ]
       )
 
-    questoes = @formulario.template.questoes.order("utilizacoes_questoes.numero")
+    questoes = @formulario.questoes.order(:id)
     csv_data = CSV.generate(headers: true, col_sep: ";") do |csv|
       csv << [ "Aluno", "Matrícula", *questoes.map(&:enunciado) ]
 
@@ -105,6 +114,21 @@ class FormulariosController < ApplicationController
 
     redirect_to avaliacoes_pendentes_path,
       alert: "Apenas administradores possuem acesso a este recurso"
+  end
+
+  def set_formulario
+    @formulario = Formulario
+      .do_departamento(current_administrador.departamento)
+      .find(params[:id])
+  rescue ActiveRecord::RecordNotFound
+    mensagem = if action_name == "exportar_csv"
+      "Você não tem permissão para exportar os resultados desse formulário."
+    else
+      "Você não tem permissão para acessar esse formulário."
+    end
+
+    redirect_to formularios_path,
+      alert: mensagem
   end
 
   def linha_csv(avaliacao, questoes)

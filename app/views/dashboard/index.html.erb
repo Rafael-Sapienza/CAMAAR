@@ -1,63 +1,54 @@
-<% if flash[:success] %>
-  <div style="background-color: #d4edda; color: #155724; padding: 12px; border: 1px solid #c3e6cb; border-radius: 4px; margin: 20px auto; max-width: 350px; text-align: center; font-family: sans-serif;">
-    <%= sanitize(flash[:success]) %>
-  </div>
-<% end %>
+<main class="app-page">
+  <% if flash[:success] %>
+    <div class="app-alert app-alert--success"><%= sanitize(flash[:success]) %></div>
+  <% end %>
 
-<% if flash[:error] %>
-  <div style="background-color: #f8d7da; color: #721c24; padding: 12px; border: 1px solid #f5c6cb; border-radius: 4px; margin: 20px auto; max-width: 350px; text-align: center; font-family: sans-serif;">
-    <%= flash[:error] %>
-  </div>
-<% end %>
+  <% if flash[:error] %>
+    <div class="app-alert app-alert--error"><%= flash[:error] %></div>
+  <% end %>
 
-<% if flash[:notice] %>
-  <div style="background-color: #d1ecf1; color: #0c5460; padding: 12px; border: 1px solid #bee5eb; border-radius: 4px; margin: 20px auto; max-width: 350px; text-align: center; font-family: sans-serif;">
-    <%= flash[:notice] %>
-  </div>
-<% end %>
+  <% if flash[:notice] %>
+    <div class="app-alert app-alert--notice"><%= flash[:notice] %></div>
+  <% end %>
 
-<% content_for :head, stylesheet_link_tag("dashboard", "data-turbo-track": "reload") %>
+  <header class="app-page__header">
+    <h1>Olá, <%= current_user.nome %></h1>
+    <p>Acesse as atividades e ferramentas disponíveis para o seu perfil.</p>
+  </header>
 
-<div class="dashboard-container">
-  <%= render 'layouts/dashboard_shared/sidebar' %>
-
-  <div class="main-content">
-    <header class="topbar">
-      <button class="hamburger-btn" aria-label="Menu">&#9776;</button>
-      <div class="search-container">
-        <input type="text" placeholder="Pesquisar..." autocomplete="off">
+  <section class="app-panel">
+    <div class="app-section-heading">
+      <div>
+        <h2>Avaliações pendentes</h2>
+        <p>Formulários das suas turmas que ainda aguardam resposta.</p>
       </div>
+      <%= link_to "Ver todas", avaliacoes_pendentes_path, class: "app-button app-button--secondary" %>
+    </div>
 
-      <details class="user-dropdown">
-        <summary class="user-avatar">
-          <%= current_user&.nome&.first&.upcase || "U" %>
-        </summary>
-
-        <div class="dropdown-menu">
-          <div class="dropdown-info">
-            <p class="user-name"><strong><%= current_user&.nome %></strong></p>
-            <p class="user-detail">Matrícula: <%= current_user&.matricula %></p>
-            <p class="user-detail">E-mail: <%= current_user&.email %></p>
-          </div>
-          <div class="dropdown-divider"></div>
-
-          <%= link_to "Sair da Conta", logout_path, data: { turbo_method: :delete }, class: "logout-btn" %>
-        </div>
-      </details>
-    </header>
-
-    <main class="cards-grid">
-      <% if @turmas_simuladas.present? %>
-        <% @turmas_simuladas.each do |turma| %>
-          <div class="card-materia">
-            <h2><%= turma[:materia] %></h2>
-            <span class="sub-text"><%= turma[:semestre] %></span>
-            <h3><%= turma[:professor] %></h3>
-          </div>
+    <% if @avaliacoes_pendentes.any? %>
+      <div class="pending-grid">
+        <% @avaliacoes_pendentes.each do |avaliacao| %>
+          <%= link_to responder_avaliacao_path(avaliacao), class: "pending-card pending-card--link" do %>
+            <strong><%= avaliacao.formulario.template&.titulo || "Avaliação" %></strong>
+            <p><%= avaliacao.formulario.turma.nome_exibicao %></p>
+            <span class="status-pill">Não respondido</span>
+          <% end %>
         <% end %>
-      <% else %>
-        <p style="color: #666; padding: 20px;">Nenhuma turma encontrada para este usuário.</p>
-      <% end %>
-    </main>
-  </div>
-</div>
+      </div>
+    <% else %>
+      <p class="app-empty-state">Nenhum formulário pendente foi encontrado.</p>
+    <% end %>
+  </section>
+
+  <% if current_user.administrador? %>
+    <section class="app-panel">
+      <div class="app-section-heading">
+        <div>
+          <h2>Administração</h2>
+          <p>Crie templates, publique formulários e acompanhe resultados.</p>
+        </div>
+        <%= link_to "Abrir gerenciamento", gerenciamento_path, class: "app-button app-button--accent" %>
+      </div>
+    </section>
+  <% end %>
+</main>

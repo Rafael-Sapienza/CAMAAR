@@ -72,12 +72,12 @@ RSpec.describe "Redefinição de Senha", type: :request do
   describe "POST /redefinir-senha/confirmar" do
     let!(:token_valido) { usuario.tokens.create!(value: "token_secreto_123", tipo: "redefinicao", expires_at: 10.minutes.from_now) }
 
-    context "quando a nova senha tem menos de 6 caracteres" do
+    context "quando a nova senha tem menos de 8 caracteres" do
       it "recusa a alteração" do
         post "/redefinir-senha/confirmar", params: { token: "token_secreto_123", senha: "123", senha_confirmacao: "123" }
 
         expect(response).to redirect_to(redefinir_senha_path(token: "token_secreto_123"))
-        expect(flash[:error]).to eq("A nova senha deve conter pelo menos 6 caracteres.")
+        expect(flash[:error]).to eq("A nova senha deve conter pelo menos 8 caracteres.")
       end
     end
 

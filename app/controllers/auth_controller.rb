@@ -7,6 +7,8 @@ require "uri"
 class AuthController < ApplicationController
   include BrevoEmailable
 
+  TAMANHO_MINIMO_SENHA = 8
+
   before_action :impedir_se_logado,
     only: %i[solicitar_cadastro cadastrar solicitar_redef_senha redefinir_senha]
   before_action :validar_token_via_url, only: %i[cadastrar redefinir_senha]
@@ -38,6 +40,13 @@ class AuthController < ApplicationController
   end
 
   def login
+    if params[:identificador].blank? && params[:senha].blank?
+      return redirecionar_com_erro(root_path, "Informe sua matrícula ou e-mail e sua senha.")
+    end
+
+    return redirecionar_com_erro(root_path, "Informe sua matrícula ou e-mail.") if params[:identificador].blank?
+    return redirecionar_com_erro(root_path, "Informe sua senha.") if params[:senha].blank?
+
     usuario = buscar_usuario_por_identificador(params[:identificador])
 
     if usuario.nil?
@@ -97,10 +106,17 @@ class AuthController < ApplicationController
   end
 
   def confirmar_cadastro
-    if params[:senha].length < 6
+    if params[:senha].blank? || params[:senha_confirmacao].blank?
       return redirecionar_com_erro(
         confirmar_cadastro_path(token: params[:token]),
-        "A senha deve conter pelo menos 6 caracteres."
+        "Os campos de senha são obrigatórios."
+      )
+    end
+
+    if params[:senha].length < TAMANHO_MINIMO_SENHA
+      return redirecionar_com_erro(
+        confirmar_cadastro_path(token: params[:token]),
+        "A senha deve conter pelo menos #{TAMANHO_MINIMO_SENHA} caracteres."
       )
     end
 
@@ -157,10 +173,17 @@ class AuthController < ApplicationController
   end
 
   def confirmar_redefinicao_senha
-    if params[:senha].length < 6
+    if params[:senha].blank? || params[:senha_confirmacao].blank?
       return redirecionar_com_erro(
         redefinir_senha_path(token: params[:token]),
-        "A nova senha deve conter pelo menos 6 caracteres."
+        "Os campos de senha são obrigatórios."
+      )
+    end
+
+    if params[:senha].length < TAMANHO_MINIMO_SENHA
+      return redirecionar_com_erro(
+        redefinir_senha_path(token: params[:token]),
+        "A nova senha deve conter pelo menos #{TAMANHO_MINIMO_SENHA} caracteres."
       )
     end
 

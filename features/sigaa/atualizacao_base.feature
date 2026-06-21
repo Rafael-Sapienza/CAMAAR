@@ -16,7 +16,7 @@ Funcionalidade: Atualizar base de dados com os dados do SIGAA
     Quando eu clico no botão "Importar dados"
     Então o e-mail do usuário "190084006" deve ser atualizado para "usuarionovo@gmail.com"
     E nenhum usuário duplicado deve ser criado
-    E eu devo ver a mensagem de sucesso "Dados atualizados com sucesso!"
+    E eu devo ver a mensagem de sucesso "Dados do SIGAA importados e sincronizados com sucesso!"
 
   @happy
   Cenário: Sincronizar participante que mudou de nome
@@ -24,7 +24,7 @@ Funcionalidade: Atualizar base de dados com os dados do SIGAA
     E a fonte de dados externa indica que o nome de "200033522" agora é "nome não genérico"
     Quando eu clico no botão "Importar dados"
     Então o nome do usuário "200033522" deve ser atualizado para "nome não genérico"
-    E eu devo ver a mensagem de sucesso "Dados atualizados com sucesso!"
+    E eu devo ver a mensagem de sucesso "Dados do SIGAA importados e sincronizados com sucesso!"
 
 
   @happy
@@ -34,7 +34,7 @@ Funcionalidade: Atualizar base de dados com os dados do SIGAA
     Quando eu clico no botão "Importar dados"
     Então o e-mail do usuário "190084006" deve ser atualizado para "usuarioemail@gmail.com"
     E o nome do usuário "190084006" deve ser atualizado para "usuario com email"
-    E eu devo ver a mensagem de sucesso "Dados atualizados com sucesso!"
+    E eu devo ver a mensagem de sucesso "Dados do SIGAA importados e sincronizados com sucesso!"
 
   @sad
   Cenário: Falha ao buscar os dados

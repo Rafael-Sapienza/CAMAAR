@@ -22,12 +22,12 @@ def criar_contexto_formulario_com_questoes(nome_turma)
   )
   perf_adm = PerfilAdm.create!(usuario: adm, departamento: depto)
 
-  @questao_discursiva = Questao.create!(
+  questao_discursiva = Questao.create!(
     enunciado: "Como você avalia a turma?",
     tipo: :discursiva
   )
 
-  @questao_objetiva = Questao.create!(
+  questao_objetiva = Questao.create!(
     enunciado: "Qual nota você dá?",
     tipo: :objetiva,
     opcoes_attributes: [
@@ -39,31 +39,27 @@ def criar_contexto_formulario_com_questoes(nome_turma)
   template = Template.create!(
     adm: perf_adm,
     titulo: "Template #{rand(1000)}",
-    utilizacao_questoes_attributes: [
-      { questao_id: @questao_discursiva.id, numero: 1 },
-      { questao_id: @questao_objetiva.id,   numero: 2 }
+    utilizacoes_questoes_attributes: [
+      { questao_id: questao_discursiva.id, numero: 1 },
+      { questao_id: questao_objetiva.id, numero: 2 }
     ]
   )
 
-  @questao_discursiva.reload
-  @questao_objetiva.reload
-
-  @formulario = Formulario.create!(
-    adm: perf_adm,
-    turma: @turma,
-    publico_alvo: :discentes,
-    template: template
-  )
-
   PerfilDiscente.find_or_create_by!(usuario: usuario)
-  ParticipacaoTurma.find_or_create_by!(
+  participacao = ParticipacaoTurma.find_or_create_by!(
     usuario: usuario,
     turma: @turma,
     tipo_participacao: :discente
   )
 
-  participacao = ParticipacaoTurma.find_by!(usuario: usuario, turma: @turma)
-  @avaliacao = Avaliacao.create!(formulario: @formulario, participacao_turma: participacao)
+  @formulario = Formularios::CreateFromTemplate.call(
+    template_id: template.id,
+    turma_ids: [ @turma.id ],
+    publico_alvo: :discentes,
+    perfil_adm: perf_adm
+  ).sole
+  @questao_discursiva, @questao_objetiva = @formulario.questoes.order(:id).to_a
+  @avaliacao = @formulario.avaliacoes.find_by!(participacao_turma: participacao)
 end
 
 Dado('que estou na página de resposta do formulário da turma {string}') do |nome_turma|
@@ -74,6 +70,24 @@ end
 Dado('que já respondi o formulário da turma {string} anteriormente') do |nome_turma|
   criar_contexto_formulario_com_questoes(nome_turma)
   @avaliacao.marcar_como_respondida!
+end
+
+Dado("que existe uma avaliação pendente pertencente a outro participante") do
+  participante_atual = usuario_atual
+  outro_participante = usuario_participante(
+    nome: "Outro participante",
+    email: "outro-participante@unb.br",
+    matricula: "OUTRO001"
+  )
+  definir_usuario_atual(outro_participante)
+  criar_contexto_formulario_com_questoes("Cálculo 1")
+  @avaliacao_alheia = @avaliacao
+  definir_usuario_atual(participante_atual)
+end
+
+Dado("que o template de origem do formulário foi excluído") do
+  @formulario.template.destroy!
+  @formulario.reload
 end
 
 Quando('eu preencho todas as questões obrigatórias') do
@@ -97,6 +111,33 @@ Quando('eu tento acessar a página de resposta do formulário da turma {string}'
   visit responder_avaliacao_path(@avaliacao)
 end
 
+Quando("tento acessar essa avaliação pela URL") do
+  visit responder_avaliacao_path(@avaliacao_alheia)
+end
+
+Quando("envio uma opção pertencente a outra questão") do
+  outra_questao = Questao.create!(
+    formulario: @formulario,
+    enunciado: "Questão fora da resposta",
+    tipo: :objetiva,
+    opcoes_attributes: [
+      { numero: 1, texto: "Opção externa A" },
+      { numero: 2, texto: "Opção externa B" }
+    ]
+  )
+
+  page.driver.submit(
+    :post,
+    submeter_avaliacao_path(@avaliacao),
+    {
+      respostas: {
+        @questao_discursiva.id.to_s => { texto: "Resposta válida" },
+        @questao_objetiva.id.to_s => { opcao_id: outra_questao.opcoes.first.id }
+      }
+    }
+  )
+end
+
 Então('devo ver uma mensagem informando que a avaliação foi registrada com sucesso') do
   expect(page).to have_content("Avaliação registrada com sucesso.")
 end
@@ -116,4 +157,15 @@ end
 
 Então('devo ver uma mensagem informando que esta avaliação já foi respondida') do
   expect(page).to have_content("Esta avaliação já foi respondida.")
+end
+
+Então("devo ver uma mensagem informando que a avaliação não foi encontrada") do
+  expect(page).to have_content("Avaliação não encontrada.")
+  expect(page).to have_current_path(avaliacoes_pendentes_path)
+end
+
+Então("devo continuar vendo as questões copiadas para o formulário") do
+  expect(@formulario.template).to be_nil
+  expect(page).to have_content(@questao_discursiva.enunciado)
+  expect(page).to have_content(@questao_objetiva.enunciado)
 end

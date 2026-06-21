@@ -12,17 +12,17 @@ Funcionalidade: Definição de Senha (Primeiro Acesso)
     Dado que acessei o link de ativação contido no e-mail de cadastro enviado pelo sistema
     Quando eu preencho o campo "Nova Senha" com "NovaSenha123"
     E preencho o campo "Confirme a Senha" com "NovaSenha123"
-    E clico em "Definir Senha"
+    E clico em "Concluir Cadastro"
     Então meu usuário deve ser ativado na base de dados
-    E devo ver a mensagem "Cadastro ativado com sucesso!"
+    E devo ver a mensagem "Cadastro concluído com sucesso! Faça seu login."
 
   @sad
   Cenário: Tentar definir senha com campos divergentes
     Dado que acessei o link de ativação contido no e-mail de cadastro enviado pelo sistema
     Quando eu preencho o campo "Nova Senha" com "NovaSenha123"
     E preencho o campo "Confirme a Senha" com "SenhaDiferente99"
-    E clico em "Definir Senha"
-    Então devo ver a mensagem de erro "A confirmação da senha não confere"
+    E clico em "Concluir Cadastro"
+    Então devo ver a mensagem de erro "As senhas não coincidem. Digite novamente."
     E o meu usuário deve continuar inativo
 
   @sad
@@ -30,6 +30,6 @@ Funcionalidade: Definição de Senha (Primeiro Acesso)
     Dado que acessei o link de ativação contido no e-mail de cadastro enviado pelo sistema
     Quando eu deixo o campo "Nova Senha" vazio
     E deixo o campo "Confirme a Senha" vazio
-    E clico em "Definir Senha"
-    Então devo ver a mensagem de erro "Os campos de senha são obrigatórios"
+    E clico em "Concluir Cadastro"
+    Então devo ver a mensagem de erro "Os campos de senha são obrigatórios."
     E o meu usuário deve continuar inativo

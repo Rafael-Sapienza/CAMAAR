@@ -65,4 +65,96 @@ RSpec.describe "Avaliacoes", type: :request do
       expect(response).to redirect_to(login_path)
     end
   end
+
+  describe "GET /avaliacoes/:id/responder" do
+    it "impede acesso à avaliação de outro participante" do
+      dono = create_usuario(nome: "Dono da avaliação")
+      intruso = create_usuario(nome: "Outro participante")
+      participacao_dono = create_participacao(
+        usuario: dono,
+        turma: turma,
+        tipo_participacao: :discente
+      )
+      create_participacao(
+        usuario: intruso,
+        turma: turma,
+        tipo_participacao: :discente
+      )
+      formulario = Formularios::CreateFromTemplate.call(
+        template_id: template.id,
+        turma_ids: [ turma.id ],
+        publico_alvo: :discentes,
+        perfil_adm: admin.perfil_adm
+      ).sole
+      avaliacao = formulario.avaliacoes.find_by!(participacao_turma: participacao_dono)
+
+      sign_in_as(intruso)
+      get responder_avaliacao_path(avaliacao)
+
+      expect(response).to redirect_to(avaliacoes_pendentes_path)
+      expect(flash[:alert]).to eq("Avaliação não encontrada.")
+    end
+
+    it "exibe as questões copiadas após exclusão do template" do
+      participante = create_usuario
+      participacao = create_participacao(
+        usuario: participante,
+        turma: turma,
+        tipo_participacao: :discente
+      )
+      formulario = Formularios::CreateFromTemplate.call(
+        template_id: template.id,
+        turma_ids: [ turma.id ],
+        publico_alvo: :discentes,
+        perfil_adm: admin.perfil_adm
+      ).sole
+      avaliacao = formulario.avaliacoes.find_by!(participacao_turma: participacao)
+      enunciados = formulario.questoes.pluck(:enunciado)
+      template.destroy!
+
+      sign_in_as(participante)
+      get responder_avaliacao_path(avaliacao)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(*enunciados)
+    end
+  end
+
+  describe "POST /avaliacoes/:id/submeter" do
+    it "rejeita opção pertencente a outra questão" do
+      participante = create_usuario
+      participacao = create_participacao(
+        usuario: participante,
+        turma: turma,
+        tipo_participacao: :discente
+      )
+      formulario = Formularios::CreateFromTemplate.call(
+        template_id: template.id,
+        turma_ids: [ turma.id ],
+        publico_alvo: :discentes,
+        perfil_adm: admin.perfil_adm
+      ).sole
+      avaliacao = formulario.avaliacoes.find_by!(participacao_turma: participacao)
+      questao_discursiva = formulario.questoes.discursivas.sole
+      questao_objetiva = formulario.questoes.objetivas.sole
+      opcao_de_outra_questao = template.questoes.objetivas.sole.opcoes.first
+
+      sign_in_as(participante)
+
+      expect do
+        post submeter_avaliacao_path(avaliacao), params: {
+          respostas: {
+            questao_discursiva.id => { texto: "Resposta válida" },
+            questao_objetiva.id => { opcao_id: opcao_de_outra_questao.id }
+          }
+        }
+      end.not_to change(Resposta, :count)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include(
+        "Todas as questões obrigatórias devem ser preenchidas."
+      )
+      expect(avaliacao.reload).to be_pendente
+    end
+  end
 end

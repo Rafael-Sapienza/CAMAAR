@@ -1,32 +1,41 @@
-<h1>Avaliações Pendentes</h1>
+<main class="app-page">
+  <header class="app-page__header">
+    <h1>Avaliações Pendentes</h1>
+    <p>Responda às avaliações disponíveis para as suas turmas.</p>
+  </header>
 
-<% if flash[:notice] %>
-  <p id="notice"><%= flash[:notice] %></p>
-<% end %>
+  <% if flash[:notice] %>
+    <p id="notice" class="app-alert app-alert--notice"><%= flash[:notice] %></p>
+  <% end %>
 
-<% if flash[:alert] %>
-  <p id="alert"><%= flash[:alert] %></p>
-<% end %>
+  <% if flash[:alert] %>
+    <p id="alert" class="app-alert app-alert--error"><%= flash[:alert] %></p>
+  <% end %>
 
-<% if @avaliacoes_pendentes.any? %>
-  <table>
-    <thead>
-      <tr>
-        <th>Turma</th>
-        <th>Status</th>
-        <th>Ação</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @avaliacoes_pendentes.each do |avaliacao| %>
-        <tr>
-          <td><%= avaliacao.formulario.turma.nome_exibicao %></td>
-          <td>Não respondido</td>
-          <td><%= link_to "Responder", responder_avaliacao_path(avaliacao) %></td>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
-<% else %>
-  <p>Nenhum formulário pendente foi encontrado.</p>
-<% end %>
+  <section class="app-panel">
+    <% if @avaliacoes_pendentes.any? %>
+      <div class="app-table-wrap">
+        <table class="app-table">
+          <thead>
+            <tr>
+              <th>Turma</th>
+              <th>Status</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @avaliacoes_pendentes.each do |avaliacao| %>
+              <tr>
+                <td><%= avaliacao.formulario.turma.nome_exibicao %></td>
+                <td><span class="status-pill">Não respondido</span></td>
+                <td><%= link_to "Responder", responder_avaliacao_path(avaliacao), class: "app-button" %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <p class="app-empty-state">Nenhum formulário pendente foi encontrado.</p>
+    <% end %>
+  </section>
+</main>

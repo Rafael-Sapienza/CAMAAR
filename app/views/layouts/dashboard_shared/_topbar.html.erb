@@ -1,0 +1,45 @@
+<header class="topbar">
+  <button
+    type="button"
+    class="hamburger-btn"
+    aria-label="Abrir ou fechar menu"
+    aria-controls="app-sidebar"
+    aria-expanded="true"
+    data-app-shell-target="menuButton"
+    data-action="app-shell#toggleSidebar">
+    <span aria-hidden="true">&#9776;</span>
+  </button>
+
+  <%= form_with url: pesquisa_path, method: :get, class: "search-container", role: :search do %>
+    <%= label_tag :q, "Pesquisar no CAMAAR", class: "visually-hidden" %>
+    <%= search_field_tag :q,
+                         params[:q],
+                         placeholder: "Pesquisar avaliações, templates e formulários...",
+                         autocomplete: "off",
+                         required: true %>
+    <%= button_tag type: :submit, class: "search-btn", aria: { label: "Pesquisar" } do %>
+      <span class="visually-hidden">Pesquisar</span>
+      <svg aria-hidden="true" viewBox="0 0 24 24" width="19" height="19">
+        <circle cx="11" cy="11" r="7"></circle>
+        <path d="m16 16 5 5"></path>
+      </svg>
+    <% end %>
+  <% end %>
+
+  <details class="user-dropdown">
+    <summary class="user-avatar" aria-label="Abrir menu do usuário">
+      <%= current_user.nome.first.upcase %>
+    </summary>
+
+    <div class="dropdown-menu">
+      <div class="dropdown-info">
+        <p class="user-name"><strong><%= current_user.nome %></strong></p>
+        <p class="user-detail">Matrícula: <%= current_user.matricula %></p>
+        <p class="user-detail">E-mail: <%= current_user.email %></p>
+      </div>
+      <div class="dropdown-divider"></div>
+
+      <%= link_to "Sair da conta", logout_path, data: { turbo_method: :delete }, class: "logout-btn" %>
+    </div>
+  </details>
+</header>

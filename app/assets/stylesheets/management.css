@@ -1,0 +1,115 @@
+/* Management cards, global search results, and report details. */
+
+.app-section-heading {
+  align-items: center;
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.app-section-heading h2,
+.app-section-heading p {
+  margin-bottom: 0;
+}
+
+.app-section-heading p {
+  color: var(--camaar-muted);
+  margin-top: 6px;
+}
+
+.management-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+}
+
+.management-card {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+}
+
+.management-card h2 {
+  color: var(--camaar-ink);
+  margin: 0 0 10px;
+}
+
+.management-card p {
+  color: var(--camaar-muted);
+  line-height: 1.55;
+  margin: 0 0 22px;
+}
+
+.management-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.search-results__list {
+  display: grid;
+  gap: 12px;
+}
+
+.search-result {
+  background: var(--camaar-surface);
+  border: 1px solid var(--camaar-border);
+  border-left: 4px solid var(--camaar-brand);
+  border-radius: 12px;
+  color: var(--camaar-ink);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 15px 17px;
+  text-decoration: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-result span {
+  color: var(--camaar-muted);
+  font-size: 14px;
+}
+
+.search-result:hover,
+.search-result:focus {
+  border-color: #CFA9CB;
+  box-shadow: 0 10px 24px rgba(76, 18, 70, 0.10);
+  outline: none;
+}
+
+.app-details {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
+  margin: 0 0 28px;
+}
+
+.app-details > div {
+  background: #FCF9FC;
+  border: 1px solid var(--camaar-border);
+  border-radius: 12px;
+  padding: 15px;
+}
+
+.app-details dt {
+  color: var(--camaar-muted);
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.app-details dd {
+  color: var(--camaar-ink);
+  font-weight: 600;
+  margin: 0;
+}
+
+@media (max-width: 760px) {
+  .app-section-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

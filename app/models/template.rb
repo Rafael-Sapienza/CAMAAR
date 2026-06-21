@@ -6,13 +6,13 @@ class Template < ApplicationRecord
     foreign_key: :adm_id,
     inverse_of: :templates
 
-  has_many :utilizacao_questoes,
+  has_many :utilizacoes_questoes,
     class_name: "UtilizacaoQuestao",
     foreign_key: :template_id,
     inverse_of: :template,
     dependent: :destroy
 
-  has_many :questoes, through: :utilizacao_questoes, source: :questao
+  has_many :questoes, through: :utilizacoes_questoes, source: :questao
 
   has_many :formularios,
     class_name: "Formulario",
@@ -20,7 +20,7 @@ class Template < ApplicationRecord
     inverse_of: :template,
     dependent: :nullify
 
-  accepts_nested_attributes_for :utilizacao_questoes,
+  accepts_nested_attributes_for :utilizacoes_questoes,
     allow_destroy: true,
     reject_if: :utilizacao_questao_em_branco?
 
@@ -49,7 +49,7 @@ class Template < ApplicationRecord
   end
 
   def questoes_ordenadas
-    utilizacao_questoes.includes(:questao, :opcoes).ordenadas
+    utilizacoes_questoes.includes(:questao, :opcoes).ordenadas
   end
 
   private
@@ -63,13 +63,14 @@ class Template < ApplicationRecord
   end
 
   def deve_ter_ao_menos_uma_questao
-    questoes_validas = utilizacao_questoes.reject(&:marked_for_destruction?)
+    questoes_validas = utilizacoes_questoes.reject(&:marked_for_destruction?)
     return if questoes_validas.any?
 
-    errors.add(:utilizacao_questoes, "deve conter ao menos uma questão")
+    errors.add(:utilizacoes_questoes, "deve conter ao menos uma questão")
   end
 
   def utilizacao_questao_em_branco?(attributes)
+    return false if attributes["id"].present?
     return false if attributes["questao_id"].present?
 
     questao_attributes = attributes["questao_attributes"] || {}

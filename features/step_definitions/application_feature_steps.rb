@@ -1,84 +1,71 @@
 # frozen_string_literal: true
 
-Given(/^estou na página "([^"]+)"$/) do |pagina|
-  pendente_por_app_incompleto!("página '#{pagina}'")
+Given(/^estou na página "Gerenciamento"$/) do
+  visit gerenciamento_path
 end
 
 When(/^eu acesso a página de criação de formulário$/) do
-  pendente_por_app_incompleto!("criação de formulário")
+  visit new_formulario_path
 end
 
-When(/^eu acesso a página de gerenciamento de turmas$/) do
-  pendente_por_app_incompleto!("gerenciamento de turmas")
+When(/^eu tento acessar o formulário "([^"]+)"$/) do |nome|
+  formulario = estado[:formularios_por_nome].fetch(nome)
+  visit formulario_path(formulario)
 end
 
-When(/^eu acesso o link de redefinição do e-mail dentro do prazo de validade$/) do
-  pendente_por_app_incompleto!("recuperação de senha")
-end
-
-When(/^eu tento acessar o link de redefinição contido no e-mail$/) do
-  pendente_por_app_incompleto!("recuperação de senha")
-end
-
-When(/^eu tento acessar o formulário "([^"]+)"$/) do |formulario|
-  pendente_por_app_incompleto!("acesso ao formulário #{formulario}")
-end
-
-When(/^eu tento exportar os resultados do formulário "([^"]+)"$/) do |formulario|
-  pendente_por_app_incompleto!("exportação CSV do formulário #{formulario}")
+When(/^eu tento exportar os resultados do formulário "([^"]+)"$/) do |nome|
+  formulario = estado[:formularios_por_nome].fetch(nome)
+  visit exportar_csv_formulario_path(formulario)
 end
 
 When(/^seleciono o template "([^"]+)"$/) do |titulo|
-  estado[:template_selecionado] = Template.find_by!(titulo: titulo)
+  select titulo, from: "template_id"
 end
 
 When(/^seleciono a turma "([^"]+)" da matéria "([^"]+)"$/) do |numero, materia|
-  estado[:turma_selecionada] = turma_da_materia(numero, materia)
+  turma = turma_da_materia(numero, materia)
+  check turma.nome_exibicao
 end
 
 When(/^seleciono o público-alvo "([^"]+)"$/) do |publico|
-  estado[:publico_alvo] = publico
+  choose publico.capitalize, allow_label_click: true
 end
 
 When(/^confirmo a criação do formulário$/) do
-  turma = estado.fetch(:turma_selecionada)
-  template = estado.fetch(:template_selecionado)
-  publico = estado.fetch(:publico_alvo, "discentes")
-
-  if turma.departamento_id != adm_atual.departamento_id
-    estado[:mensagens] << "não tenho permissão para gerenciar essa turma"
-    next
-  end
-
-  estado[:formulario_criado] = Formulario.create!(
-    adm: adm_atual,
-    turma: turma,
-    template: template,
-    publico_alvo: publico
-  )
-  estado[:mensagens] << "o formulário foi criado com sucesso"
+  click_button "Confirmar Publicação"
 end
 
-When(/^pressiono o botão "Criar Formulário"$/) do
-  steps("Quando confirmo a criação do formulário")
+When(
+  /^tento preparar um formulário para a turma "([^"]+)" da matéria "([^"]+)" usando o template "([^"]+)"$/
+) do |numero, materia, titulo|
+  turma = turma_da_materia(numero, materia)
+  template = Template.find_by!(titulo: titulo)
+
+  page.driver.submit(
+    :post,
+    preparar_formularios_path,
+    { template_id: template.id, turma_ids: [ turma.id ] }
+  )
 end
 
 Then(/^devo ver uma mensagem informando que o formulário foi criado com sucesso$/) do
-  expect(estado[:mensagens]).to include("o formulário foi criado com sucesso")
+  expect(page).to have_content("Formulário criado com sucesso para as turmas selecionadas")
 end
 
 Then(/^devo ver uma mensagem informando que não tenho permissão para gerenciar essa turma$/) do
-  expect(estado[:mensagens]).to include("não tenho permissão para gerenciar essa turma")
+  expect(page).to have_content("Uma ou mais turmas selecionadas são inválidas")
 end
 
 Then(/^devo ver uma mensagem informando que não tenho permissão para acessar esse formulário$/) do
-  pendente_por_app_incompleto!("permissão de acesso a formulário")
+  expect(page).to have_content("Você não tem permissão para acessar esse formulário.")
 end
 
 Then(/^devo ver uma mensagem informando que não tenho permissão para exportar os resultados desse formulário$/) do
-  pendente_por_app_incompleto!("permissão de exportação de formulário")
+  expect(page).to have_content(
+    "Você não tem permissão para exportar os resultados desse formulário."
+  )
 end
 
 Then(/^nenhum arquivo CSV deve ser baixado$/) do
-  pendente_por_app_incompleto!("bloqueio de download CSV")
+  expect(page.response_headers.fetch("Content-Type", "")).not_to include("text/csv")
 end

@@ -38,6 +38,7 @@ RSpec.describe "Formularios", type: :request do
       expect(response.body).to include(formulario_b.turma.nome_exibicao)
       expect(response.body).to include("Discentes")
       expect(response.body).to include("Gerar Relatório de Respostas")
+      expect(response.body).to include(formulario_path(formulario_a))
     end
 
     it "exibe mensagem quando não há formulários no semestre atual" do
@@ -100,6 +101,22 @@ RSpec.describe "Formularios", type: :request do
       expect(response.body).not_to include(turma_passada.nome_exibicao)
     end
 
+    it "lista formulário cujo template de origem foi removido" do
+      formulario = create_formulario(
+        turma: turma_a,
+        adm: admin.perfil_adm,
+        template: template
+      )
+      template.destroy!
+
+      sign_in_as(admin)
+      get formularios_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Template removido")
+      expect(response.body).to include(formulario.turma.nome_exibicao)
+    end
+
     it "bloqueia usuário não administrador" do
       sign_in_as(usuario)
 
@@ -107,6 +124,57 @@ RSpec.describe "Formularios", type: :request do
 
       expect(response).to redirect_to("/")
       expect(flash[:alert]).to eq("Acesso não autorizado")
+    end
+  end
+
+  describe "GET /formularios/:id" do
+    it "exibe o relatório de um formulário do departamento" do
+      formulario = create_formulario(
+        turma: turma_a,
+        adm: admin.perfil_adm,
+        template: template
+      )
+
+      sign_in_as(admin)
+      get formulario_path(formulario)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(template.titulo)
+      expect(response.body).to include(turma_a.nome_exibicao)
+      expect(response.body).to include(exportar_csv_formulario_path(formulario))
+    end
+
+    it "impede acesso a formulário de outro departamento" do
+      outro_departamento = Departamento.create!(nome: "Outro #{SecureRandom.hex(2)}")
+      outra_turma = create_turma(
+        nome_materia: "Externa",
+        numero: 1,
+        departamento: outro_departamento
+      )
+      formulario_externo = create_formulario(turma: outra_turma)
+
+      sign_in_as(admin)
+      get formulario_path(formulario_externo)
+
+      expect(response).to redirect_to(formularios_path)
+      expect(flash[:alert]).to eq(
+        "Você não tem permissão para acessar esse formulário."
+      )
+    end
+  end
+
+  describe "GET /formularios/new" do
+    it "pré-seleciona o template recebido pela URL" do
+      sign_in_as(admin)
+
+      get new_formulario_path(template_id: template.id)
+
+      pagina = Nokogiri::HTML(response.body)
+      opcao_selecionada = pagina.at_css("select#template_id option[selected]")
+
+      expect(response).to have_http_status(:ok)
+      expect(opcao_selecionada["value"]).to eq(template.id.to_s)
+      expect(opcao_selecionada.text).to eq(template.titulo)
     end
   end
 

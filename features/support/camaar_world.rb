@@ -215,7 +215,7 @@ module CamaarWorld
       titulo: titulo,
       descricao: descricao,
       adm: adm,
-      utilizacao_questoes_attributes: [
+      utilizacoes_questoes_attributes: [
         {
           numero: 1,
           questao_attributes: questao_attributes(

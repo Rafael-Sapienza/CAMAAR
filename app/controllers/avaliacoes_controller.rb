@@ -58,12 +58,7 @@ class AvaliacoesController < ApplicationController
   end
 
   def questoes_do_formulario
-    template = @formulario.template
-    return Questao.none unless template
-
-    template.questoes
-            .includes(:opcoes)
-            .order("utilizacoes_questoes.numero")
+    @formulario.questoes.includes(:opcoes).order(:id)
   end
 
   def todas_obrigatorias_preenchidas?

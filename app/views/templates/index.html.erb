@@ -1,24 +1,43 @@
-<h1>Templates</h1>
+<main class="app-page template-page">
+  <h1>Templates</h1>
 
-<section id="meus-templates">
-  <h2>Meus templates</h2>
-
-  <% if @user_templates.any? %>
-    <% @user_templates.each do |t| %>
-      <p>
-        <%= link_to t.titulo, template_path(t) %>
-      </p>
-    <% end %>
-  <% else %>
-    <p>Nenhum template foi encontrado</p>
+  <% if notice %>
+    <p class="app-alert app-alert--success"><%= notice %></p>
   <% end %>
-</section>
 
-<hr>
+  <section id="meus-templates" class="template-section">
+    <h2>Meus templates</h2>
 
-<h2>Templates de outros administradores</h2>
-<% @other_templates.each do |t| %>
-  <p>
-    <%= link_to t.titulo, template_path(t) %>
-  </p>
-<% end %>
+    <% if @user_templates.any? %>
+      <div class="template-form__cards">
+        <% @user_templates.each do |t| %>
+          <%= render "card", template: t, removable: true %>
+        <% end %>
+        <%= link_to new_template_path, class: "template-form__add-template-button", title: "Criar novo template", aria: { label: "Criar novo template" } do %>
+          <%= image_tag "icons/plus.svg", alt: "", width: 24, height: 24 %>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="template-form__cards">
+        <p class="app-empty-state template-form__empty-state">Nenhum template foi encontrado</p>
+        <%= link_to new_template_path, class: "template-form__add-template-button", title: "Criar novo template", aria: { label: "Criar novo template" } do %>
+          <%= image_tag "icons/plus.svg", alt: "", width: 24, height: 24 %>
+        <% end %>
+      </div>
+    <% end %>
+  </section>
+
+  <section class="template-section">
+    <h2>Outros Templates</h2>
+    <% if @other_templates.any? %>
+      <div class="template-form__cards">
+        <% @other_templates.each do |t| %>
+          <%= render "card", template: t, removable: false %>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="app-empty-state template-form__empty-state">Nenhum template de outros administradores encontrado</p>
+    <% end %>
+  </section>
+
+</main>

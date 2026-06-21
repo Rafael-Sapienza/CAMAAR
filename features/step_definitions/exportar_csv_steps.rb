@@ -21,16 +21,9 @@ Dado('que existe um formulário com respostas para a turma {string}') do |nome_t
   template = Template.create!(
     adm: administrador_csv.perfil_adm,
     titulo: "Template Padrão",
-    utilizacao_questoes_attributes: [
+    utilizacoes_questoes_attributes: [
       { questao_id: @questao.id, numero: 1 }
     ]
-  )
-
-  @formulario = Formulario.create!(
-    adm: administrador_csv.perfil_adm,
-    turma: @turma,
-    publico_alvo: :discentes,
-    template: template
   )
 
   aluno = Usuario.create!(
@@ -43,9 +36,15 @@ Dado('que existe um formulário com respostas para a turma {string}') do |nome_t
   PerfilDiscente.create!(usuario: aluno)
   part = ParticipacaoTurma.create!(usuario: aluno, turma: @turma, tipo_participacao: :discente)
 
-  avaliacao = Avaliacao.create!(formulario: @formulario, participacao_turma: part)
+  @formulario = Formularios::CreateFromTemplate.call(
+    template_id: template.id,
+    turma_ids: [ @turma.id ],
+    publico_alvo: :discentes,
+    perfil_adm: administrador_csv.perfil_adm
+  ).sole
+  @questao = @formulario.questoes.sole
+  avaliacao = @formulario.avaliacoes.find_by!(participacao_turma: part)
   avaliacao.marcar_como_respondida!
-
 
   resposta = Resposta.new(avaliacao: avaliacao, questao: @questao)
   resposta.build_texto(texto: "Ótima aula!")
@@ -53,10 +52,17 @@ Dado('que existe um formulário com respostas para a turma {string}') do |nome_t
 end
 
 Quando('eu acesso a página de relatórios do meu departamento') do
+  visit formularios_path
+
+  within("tr", text: @formulario.turma.nome_exibicao) do
+    click_button "Gerar Relatório de Respostas"
+  end
+
+  expect(page).to have_current_path(formulario_path(@formulario))
 end
 
 Quando('solicito a exportação do formulário da turma {string}') do |_nome_turma|
-  visit exportar_csv_formulario_path(@formulario)
+  click_link "Exportar CSV"
 end
 
 Então('o download do arquivo CSV deve ser iniciado') do
@@ -83,21 +89,22 @@ Dado('que existe um formulário sem respostas para a turma {string} do meu depar
   template = Template.create!(
     adm: administrador_csv.perfil_adm,
     titulo: "Template Vazio",
-    utilizacao_questoes_attributes: [
+    utilizacoes_questoes_attributes: [
       { questao_id: @questao.id, numero: 1 }
     ]
   )
 
-  @formulario_vazio = Formulario.create!(
-    adm: administrador_csv.perfil_adm,
-    turma: @turma,
+  @formulario_vazio = Formularios::CreateFromTemplate.call(
+    template_id: template.id,
+    turma_ids: [ @turma.id ],
     publico_alvo: :discentes,
-    template: template
-  )
+    perfil_adm: administrador_csv.perfil_adm
+  ).sole
 end
 
 Quando('eu solicito a exportação do formulário da turma {string}') do |_nome_turma|
-  visit exportar_csv_formulario_path(@formulario_vazio)
+  visit formulario_path(@formulario_vazio)
+  click_link "Exportar CSV"
 end
 
 Então('o arquivo CSV deve conter apenas a linha de cabeçalho') do
@@ -127,7 +134,7 @@ Quando('eu tento acessar a rota de exportação de resultados em CSV') do
   template = Template.create!(
     adm: perf,
     titulo: "Template Sad",
-    utilizacao_questoes_attributes: [
+    utilizacoes_questoes_attributes: [
       { questao_id: questao.id, numero: 1 }
     ]
   )

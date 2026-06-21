@@ -1,52 +1,38 @@
-<% if flash[:success] %>
-  <div style="background-color: #d4edda; color: #155724; padding: 12px; border: 1px solid #c3e6cb; border-radius: 4px; margin: 20px auto; max-width: 350px; text-align: center; font-family: sans-serif;">
-    <%= sanitize(flash[:success]) %>
+<main class="auth-page">
+  <% if flash[:success] %>
+    <div class="app-alert app-alert--success"><%= sanitize(flash[:success]) %></div>
+  <% end %>
+
+  <% if flash[:error] %>
+    <div class="app-alert app-alert--error"><%= flash[:error] %></div>
+  <% end %>
+
+  <div class="auth-shell">
+    <section class="app-panel auth-card">
+      <h2>Nova Senha</h2>
+      <p class="auth-card__description">Digite e confirme a sua nova senha de acesso.</p>
+
+      <form action="<%= redefinir_senha_path %>" method="POST" class="auth-form">
+        <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+        <input type="hidden" name="token" value="<%= params[:token] %>">
+
+        <div class="app-field">
+          <label for="password">Nova Senha:</label>
+          <input type="password" id="password" name="senha" placeholder="No mínimo 6 caracteres" autocomplete="new-password" required>
+        </div>
+
+        <div class="app-field">
+          <label for="password_confirmation">Confirme a Nova Senha:</label>
+          <input type="password" id="password_confirmation" name="senha_confirmacao" placeholder="Digite a senha novamente" autocomplete="new-password" required>
+        </div>
+
+        <button type="submit" class="app-button">Alterar Senha</button>
+      </form>
+    </section>
+
+    <aside class="auth-intro">
+      <h1>CAMAAR</h1>
+      <p>Após alterar sua senha, você será redirecionado ao login para acessar o sistema com as novas credenciais.</p>
+    </aside>
   </div>
-<% end %>
-
-<% if flash[:error] %>
-  <div style="background-color: #f8d7da; color: #721c24; padding: 12px; border: 1px solid #f5c6cb; border-radius: 4px; margin: 20px auto; max-width: 350px; text-align: center; font-family: sans-serif;">
-    <%= flash[:error] %>
-  </div>
-<% end %>
-
-<div class="container-autenticacao" style="display: flex; gap: 40px; align-items: center; justify-content: center; margin-top: 50px;">
-
-  <div class="card-login" style="border: 1px solid #ccc; padding: 30px; border-radius: 8px; width: 350px;">
-
-    <h2 style="margin-top: 0; margin-bottom: 20px; color: #333; font-size: 22px;">Nova Senha</h2>
-    <p style="color: #666; font-size: 14px; margin-bottom: 20px;">
-      Digite e confirme a sua nova senha de acesso abaixo.
-    </p>
-
-    <form action="<%= redefinir_senha_path %>" method="POST">
-      <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
-
-      <input type="hidden" name="token" value="<%= params[:token] %>">
-
-      <div class="campo-formulario" style="margin-bottom: 15px;">
-        <label for="password" style="display: block; margin-bottom: 5px; font-weight: bold;">Nova Senha:</label>
-        <input type="password" id="password" name="senha" placeholder="No mínimo 6 caracteres" style="width: 100%; padding: 8px; box-sizing: border-box;" autocomplete="new-password" required>
-      </div>
-
-      <div class="campo-formulario" style="margin-bottom: 25px;">
-        <label for="password_confirmation" style="display: block; margin-bottom: 5px; font-weight: bold;">Confirme a Nova Senha:</label>
-        <input type="password" id="password_confirmation" name="senha_confirmacao" placeholder="Digite a senha novamente" style="width: 100%; padding: 8px; box-sizing: border-box;" autocomplete="new-password" required>
-      </div>
-
-      <button type="submit" style="width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 14px;">
-        Alterar Senha
-      </button>
-
-    </form>
-
-  </div>
-
-  <div class="boas-vindas-painel" style="max-width: 400px;">
-    <h1 style="color: #333; font-size: 32px; margin-bottom: 10px;">CAMAAR</h1>
-    <p style="color: #666; line-height: 1.5;">
-      Após alterar a sua senha com sucesso, você será redirecionado para a tela de login inicial para acessar o sistema com as novas credenciais.
-    </p>
-  </div>
-
-</div>
+</main>

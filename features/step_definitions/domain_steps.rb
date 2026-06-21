@@ -94,9 +94,9 @@ Given(
   next if template.questoes.exists?(enunciado: enunciado)
 
   questao = Questao.create!(enunciado: enunciado, tipo: :discursiva)
-  template.utilizacao_questoes.create!(
+  template.utilizacoes_questoes.create!(
     questao: questao,
-    numero: template.utilizacao_questoes.count + 1
+    numero: template.utilizacoes_questoes.count + 1
   )
 end
 
@@ -109,7 +109,12 @@ Given(
 ) do |titulo|
   template = Template.find_by!(titulo: titulo)
   turma = turma_com_identificador("Cálculo 1")
-  estado[:formulario_anterior] = formulario_para_turma(turma, template: template)
+  estado[:formulario_anterior] = Formularios::CreateFromTemplate.call(
+    template_id: template.id,
+    turma_ids: [ turma.id ],
+    publico_alvo: :discentes,
+    perfil_adm: adm_atual
+  ).sole
 end
 
 Given(
@@ -117,7 +122,12 @@ Given(
 ) do |nome, titulo|
   template = Template.find_by!(titulo: titulo)
   turma = turma_com_identificador("Cálculo 1")
-  formulario = formulario_para_turma(turma, template: template)
+  formulario = Formularios::CreateFromTemplate.call(
+    template_id: template.id,
+    turma_ids: [ turma.id ],
+    publico_alvo: :discentes,
+    perfil_adm: adm_atual
+  ).sole
 
   estado[:formularios_por_nome][nome] = formulario
 end
@@ -127,7 +137,8 @@ Given(
 ) do |nome, turma_numero, materia_nome|
   turma = turma_da_materia(turma_numero, materia_nome)
   adm = usuario_administrador(departamento: turma.departamento.nome).perfil_adm
-  formulario = formulario_para_turma(turma, adm: adm)
+  template = template_com_titulo(nome, adm: adm)
+  formulario = formulario_para_turma(turma, template: template, adm: adm)
 
   estado[:formularios_por_nome][nome] = formulario
 end
@@ -160,25 +171,27 @@ end
 Then(/^devo ver a turma "([^"]+)" da matéria "([^"]+)"$/) do |numero, materia|
   turma = turma_da_materia(numero, materia)
 
-  expect(Turma.do_departamento(adm_atual.departamento)).to include(turma)
+  expect(page).to have_field(turma.nome_exibicao)
 end
 
 Then(/^não devo ver a turma "([^"]+)" da matéria "([^"]+)"$/) do |numero, materia|
   turma = turma_da_materia(numero, materia)
 
-  expect(Turma.do_departamento(adm_atual.departamento)).not_to include(turma)
+  expect(page).not_to have_field(turma.nome_exibicao)
 end
 
 Then(/^devo ver o formulário "([^"]+)"$/) do |nome|
-  formulario = estado[:formularios_por_nome].fetch(nome)
-
-  expect(Formulario.do_departamento(adm_atual.departamento)).to include(formulario)
+  expect(page).to have_content(nome)
 end
 
 Then(/^o formulário "([^"]+)" deve continuar existindo$/) do |nome|
   formulario = estado[:formularios_por_nome].fetch(nome)
 
   expect(Formulario.exists?(formulario.id)).to be(true)
+
+  visit formularios_path
+  expect(page).to have_content(formulario.turma.nome_exibicao)
+  expect(page).to have_content("Template removido")
 end
 
 Then(

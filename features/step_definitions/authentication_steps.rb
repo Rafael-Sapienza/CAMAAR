@@ -1,5 +1,23 @@
 # frozen_string_literal: true
 
+def campo_autenticacao(nome)
+  {
+    "E-mail ou Matrícula" => "identificador",
+    "E-mail" => "email",
+    "Senha" => "senha",
+    "Nova Senha" => "password",
+    "Confirme a Senha" => "password_confirmation"
+  }.fetch(nome)
+end
+
+def usuario_recuperacao
+  estado[:usuario_recuperacao] ||= usuario_com_email(
+    nome: "Usuário para recuperação",
+    email: "usuario.valido@email.com",
+    senha: "SenhaAtual123"
+  )
+end
+
 Given(
   /^que a base de dados possui um usuário comum com e-mail "([^"]+)", matrícula "([^"]+)" e senha "([^"]+)"$/
 ) do |email, matricula, senha|
@@ -28,76 +46,108 @@ Given(/^que fui importado do SIGAA mas ainda não possuo senha cadastrada$/) do
 end
 
 Given(/^que acessei o link de ativação contido no e-mail de cadastro enviado pelo sistema$/) do
-  pendente_por_app_incompleto!("ativação de cadastro por token")
+  token = estado[:usuario_importado].tokens.create!(
+    value: SecureRandom.hex(16),
+    tipo: :cadastro,
+    expires_at: 10.minutes.from_now
+  )
+
+  visit confirmar_cadastro_path(token: token.value)
 end
 
 Given(/^que estou na página de login$/) do
-  pendente_por_app_incompleto!("login")
+  visit root_path
+end
+
+Given(/^que existe um usuário ativo com o e-mail "([^"]+)"$/) do |email|
+  estado[:usuario_recuperacao] = usuario_com_email(
+    nome: "Usuário para recuperação",
+    email: email,
+    senha: "SenhaAtual123"
+  )
+  allow_any_instance_of(AuthController)
+    .to receive(:enviar_email_redefinicao)
+    .and_return(true)
 end
 
 Given(/^que solicitei a recuperação de senha e recebi o e-mail com o link de redefinição$/) do
-  pendente_por_app_incompleto!("recuperação de senha")
+  token = usuario_recuperacao.tokens.create!(
+    value: SecureRandom.hex(16),
+    tipo: :redefinicao,
+    expires_at: 10.minutes.from_now
+  )
+  estado[:token_redefinicao] = token
 end
 
-Given(/^que solicitei a recuperação de senha e recebi o e-mail há mais de 24 horas$/) do
-  pendente_por_app_incompleto!("expiração de token de recuperação de senha")
+Given(/^que solicitei a recuperação de senha e recebi o e-mail há mais de 10 minutos$/) do
+  token = usuario_recuperacao.tokens.create!(
+    value: SecureRandom.hex(16),
+    tipo: :redefinicao,
+    expires_at: 1.minute.ago
+  )
+  estado[:token_redefinicao] = token
 end
 
 When(/^eu preencho o campo "([^"]+)" com "([^"]+)"$/) do |campo, valor|
-  estado[:campos][campo] = valor
+  fill_in campo_autenticacao(campo), with: valor
 end
 
 When(/^preencho o campo "([^"]+)" com "([^"]+)"$/) do |campo, valor|
-  estado[:campos][campo] = valor
+  fill_in campo_autenticacao(campo), with: valor
 end
 
 When(/^eu deixo o campo "([^"]+)" vazio$/) do |campo|
-  estado[:campos][campo] = nil
+  fill_in campo_autenticacao(campo), with: ""
 end
 
 When(/^deixo o campo "([^"]+)" vazio$/) do |campo|
-  estado[:campos][campo] = nil
+  fill_in campo_autenticacao(campo), with: ""
 end
 
 When(/^preencho a nova senha com "([^"]+)"$/) do |senha|
-  estado[:campos]["Nova Senha"] = senha
+  fill_in "password", with: senha
 end
 
 When(/^confirmo a nova senha com "([^"]+)"$/) do |senha|
-  estado[:campos]["Confirme a Senha"] = senha
+  fill_in "password_confirmation", with: senha
 end
 
 When(/^eu clico em "([^"]+)"$/) do |acao|
-  case acao
-  when "Esqueci minha senha"
-    pendente_por_app_incompleto!("recuperação de senha")
-  else
-    pendente_por_app_incompleto!("ação '#{acao}'")
-  end
+  click_link acao
 end
 
-When(/^clico em "(Definir Senha|Enviar link de recuperação|Atualizar Senha)"$/) do |acao|
-  pendente_por_app_incompleto!("ação '#{acao}'")
+When(/^clico em "(Concluir Cadastro|Enviar e-mail de redefinição|Alterar Senha)"$/) do |acao|
+  click_button acao
 end
 
 When(/^clico no botão "([^"]+)"$/) do |botao|
-  pendente_por_app_incompleto!("botão '#{botao}'")
+  click_button botao
+end
+
+When(/^eu acesso o link de redefinição do e-mail dentro do prazo de validade$/) do
+  visit redefinir_senha_path(token: estado.fetch(:token_redefinicao).value)
+end
+
+When(/^eu tento acessar o link de redefinição contido no e-mail$/) do
+  visit redefinir_senha_path(token: estado.fetch(:token_redefinicao).value)
 end
 
 Then(/^devo ser autenticado com sucesso$/) do
-  pendente_por_app_incompleto!("login")
+  expect(page).to have_current_path(avaliacoes_path)
+  expect(page).to have_css('[data-controller="app-shell"]')
 end
 
 Then(/^devo visualizar a opção de gerenciamento no menu lateral$/) do
-  pendente_por_app_incompleto!("menu lateral")
+  expect(page).to have_link("Gerenciamento", href: gerenciamento_path)
 end
 
 Then(/^não devo visualizar a opção de gerenciamento no menu lateral$/) do
-  pendente_por_app_incompleto!("menu lateral")
+  expect(page).not_to have_link("Gerenciamento", href: gerenciamento_path)
 end
 
 Then(/^permaneço na página de login$/) do
-  pendente_por_app_incompleto!("login")
+  expect(page).to have_current_path(root_path)
+  expect(page).to have_button("Entrar")
 end
 
 Then(/^meu usuário deve ser ativado na base de dados$/) do
@@ -109,33 +159,23 @@ Then(/^o meu usuário deve continuar inativo$/) do
 end
 
 Then(/^minha senha deve ser atualizada no sistema$/) do
-  pendente_por_app_incompleto!("recuperação de senha")
+  expect(usuario_recuperacao.reload.authenticate_senha("MinhaNovaSenha77")).to be_truthy
 end
 
 Then(/^devo ser redirecionado para a página de login$/) do
-  pendente_por_app_incompleto!("redirecionamento de login")
+  expect(page).to have_current_path(root_path)
 end
 
-Then(/^eu devo ser redirecionado para a página de solicitação de recuperação$/) do
-  pendente_por_app_incompleto!("recuperação de senha")
-end
-
-Then(/^devo ver a mensagem "Um link de redefinição foi enviado para o seu e-mail"$/) do
-  pendente_por_app_incompleto!("mensagem de solicitação de recuperação de senha")
-end
-
-Then(/^devo ver a mensagem "Cadastro ativado com sucesso!"$/) do
-  pendente_por_app_incompleto!("mensagem de ativação de cadastro")
+Then(
+  /^devo ver a mensagem "(Cadastro concluído com sucesso! Faça seu login\.|E-mail enviado com sucesso!)"$/
+) do |mensagem|
+  expect(page).to have_content(mensagem)
 end
 
 Then(/^devo ver a mensagem de erro "([^"]+)"$/) do |mensagem|
-  if estado[:mensagens].include?(mensagem)
-    expect(estado[:mensagens]).to include(mensagem)
-  else
-    pendente_por_app_incompleto!("mensagem '#{mensagem}'")
-  end
+  expect(page).to have_content(mensagem)
 end
 
 Then(/^devo ver o aviso "([^"]+)"$/) do |mensagem|
-  pendente_por_app_incompleto!("aviso '#{mensagem}'")
+  expect(page).to have_content(mensagem)
 end

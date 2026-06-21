@@ -4,20 +4,28 @@ require "json"
 
 class DashboardController < ApplicationController
   include BrevoEmailable
-  before_action :verificar_admin, only: [ :gerenciamento, :importar_dados, :enviar_solicitacoes ]
+  before_action :verificar_usuario, only: %i[index pesquisar]
+  before_action :verificar_admin, only: %i[gerenciamento importar_dados enviar_solicitacoes]
 
   def index
-    if current_user.nil?
-      redirect_to root_path, flash: { error: "Acesso restrito. Por favor, faça login para continuar." } and return
-    end
+    @avaliacoes_pendentes = avaliacoes_do_usuario.limit(6)
+  end
 
-    @turmas_simuladas = [
-      { materia: "Estruturas de Dados", semestre: "2026.1", professor: "Alessandro Silva" },
-      { materia: "Bancos de Dados", semestre: "2026.1", professor: "Alessandro Silva" },
-      { materia: "Cálculo 1", semestre: "2026.1", professor: "Maria Carmo" },
-      { materia: "Compiladores", semestre: "2026.1", professor: "A definir" },
-      { materia: "Sistemas Operacionais", semestre: "2026.1", professor: "A definir" }
-    ]
+  def pesquisar
+    @termo = params[:q].to_s.strip
+    @avaliacoes = Avaliacao.none
+    @templates = Template.none
+    @formularios = Formulario.none
+
+    return if @termo.blank?
+
+    padrao = "%#{ActiveRecord::Base.sanitize_sql_like(@termo.downcase)}%"
+    @avaliacoes = pesquisar_avaliacoes(padrao)
+
+    return unless current_user.administrador?
+
+    @templates = pesquisar_templates(padrao)
+    @formularios = pesquisar_formularios(padrao)
   end
 
   def gerenciamento
@@ -182,9 +190,62 @@ class DashboardController < ApplicationController
     else
       redirect_to gerenciamento_path, flash: { error: "A importação foi concluída parcialmente.", error_list: erros_importacao }
     end
+  rescue JSON::ParserError
+    redirect_to gerenciamento_path,
+      flash: { error: "Os dados recebidos do SIGAA são inválidos." }
+  rescue SystemCallError, IOError
+    redirect_to gerenciamento_path,
+      flash: { error: "Não foi possível buscar os dados. Tente novamente mais tarde." }
   end
 
   private
+
+  def verificar_usuario
+    return if current_user.present?
+
+    redirect_to root_path,
+      flash: { error: "Acesso restrito. Por favor, faça login para continuar." }
+  end
+
+  def avaliacoes_do_usuario
+    Avaliacao
+      .pendentes
+      .joins(:participacao_turma)
+      .where(participacoes_turmas: { usuario_id: current_user.id })
+      .includes(formulario: [ :template, { turma: :materia } ])
+      .order(created_at: :desc)
+  end
+
+  def pesquisar_avaliacoes(padrao)
+    avaliacoes_do_usuario
+      .joins(formulario: [ :template, { turma: :materia } ])
+      .where(
+        "LOWER(templates.titulo) LIKE :padrao OR LOWER(materias.nome) LIKE :padrao",
+        padrao: padrao
+      )
+  end
+
+  def pesquisar_templates(padrao)
+    policy_scope(Template)
+      .where(
+        "LOWER(templates.titulo) LIKE :padrao OR " \
+          "LOWER(COALESCE(templates.descricao, '')) LIKE :padrao",
+        padrao: padrao
+      )
+      .recentes
+  end
+
+  def pesquisar_formularios(padrao)
+    Formulario
+      .do_departamento(current_administrador.departamento)
+      .joins(:template, turma: :materia)
+      .where(
+        "LOWER(templates.titulo) LIKE :padrao OR LOWER(materias.nome) LIKE :padrao",
+        padrao: padrao
+      )
+      .includes(:template, turma: :materia)
+      .recentes
+  end
 
   def verificar_admin
     if current_user.nil? || !current_user.administrador?

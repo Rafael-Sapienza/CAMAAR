@@ -6,7 +6,7 @@ RSpec.describe Questao, type: :model do
   describe "associações" do
     it "possui utilizações de questões com restrição de remoção" do
       association =
-        described_class.reflect_on_association(:utilizacao_questoes)
+        described_class.reflect_on_association(:utilizacoes_questoes)
 
       expect(association.macro).to eq(:has_many)
       expect(association.class_name).to eq("UtilizacaoQuestao")
@@ -96,6 +96,20 @@ RSpec.describe Questao, type: :model do
         tipo: :discursiva
       )
       questao.opcoes.build(numero: 1, texto: "Boa")
+
+      expect(questao).not_to be_valid
+      expect(questao.errors[:opcoes])
+        .to include("não devem existir em questão discursiva")
+    end
+
+    it "não permite opções em questão discursiva via atributos aninhados" do
+      questao = described_class.new(
+        enunciado: "Descreva sua experiência",
+        tipo: :discursiva,
+        opcoes_attributes: [
+          { numero: 1, texto: "Boa" }
+        ]
+      )
 
       expect(questao).not_to be_valid
       expect(questao.errors[:opcoes])

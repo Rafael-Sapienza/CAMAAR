@@ -1,32 +1,44 @@
-<h1>Criar Formulário</h1>
+<main class="app-page">
+  <header class="app-page__header">
+    <h1>Criar Formulário</h1>
+    <p>Escolha um template e as turmas que receberão a avaliação.</p>
+  </header>
 
-<% if flash[:notice] %>
-  <p><%= flash[:notice] %></p>
-<% end %>
+  <% if flash[:notice] %>
+    <div class="app-alert app-alert--notice"><%= flash[:notice] %></div>
+  <% end %>
 
-<% if flash[:alert] %>
-  <p><%= flash[:alert] %></p>
-<% end %>
+  <% if flash[:alert] %>
+    <div class="app-alert app-alert--error"><%= flash[:alert] %></div>
+  <% end %>
 
-<%= form_with url: preparar_formularios_path do |form| %>
-  <div>
-    <label for="template_id">Template</label>
-    <%= select_tag :template_id,
-                   options_from_collection_for_select(@templates, :id, :titulo),
-                   prompt: "Selecione um template" %>
-  </div>
+  <%= form_with url: preparar_formularios_path, class: "app-panel app-form" do |form| %>
+    <div class="app-field">
+      <label for="template_id">Template</label>
+      <%= select_tag :template_id,
+                     options_from_collection_for_select(
+                       @templates,
+                       :id,
+                       :titulo,
+                       @template_selecionado&.id
+                     ),
+                     prompt: "Selecione um template" %>
+    </div>
 
-  <div>
-    <p>Turmas</p>
-    <% @turmas.each do |turma| %>
-      <div>
-        <label>
-          <%= check_box_tag "turma_ids[]", turma.id, false, id: "turma_#{turma.id}" %>
-          <%= turma.nome_exibicao %>
-        </label>
+    <fieldset class="app-field">
+      <legend>Turmas</legend>
+      <div class="choice-list">
+        <% @turmas.each do |turma| %>
+          <label class="choice-card">
+            <%= check_box_tag "turma_ids[]", turma.id, false, id: "turma_#{turma.id}" %>
+            <span><%= turma.nome_exibicao %></span>
+          </label>
+        <% end %>
       </div>
-    <% end %>
-  </div>
+    </fieldset>
 
-  <%= form.submit "Continuar" %>
-<% end %>
+    <div class="app-actions">
+      <%= form.submit "Continuar", class: "app-button" %>
+    </div>
+  <% end %>
+</main>

@@ -40,11 +40,11 @@ module TestDataHelpers
 
       questao.save!
 
-      template.utilizacao_questoes.build(questao: questao, numero: numero)
+      template.utilizacoes_questoes.build(questao: questao, numero: numero)
     end
 
     template.save!
-    template.utilizacao_questoes.each(&:save!)
+    template.utilizacoes_questoes.each(&:save!)
     template
   end
 
@@ -69,7 +69,7 @@ module TestDataHelpers
   end
 
   def questoes_ordenadas_do_template(template)
-    template.utilizacao_questoes.raizes.ordenadas.includes(:questao).map(&:questao)
+    template.utilizacoes_questoes.raizes.ordenadas.includes(:questao).map(&:questao)
   end
 
   private

@@ -1,0 +1,331 @@
+/* Shared page layouts, forms, buttons, tables, and feedback states. */
+
+.visually-hidden {
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+}
+
+.app-page {
+  background:
+    radial-gradient(circle at 92% 4%, rgba(110, 231, 183, 0.22), transparent 28%),
+    radial-gradient(circle at 4% 36%, rgba(106, 27, 96, 0.09), transparent 30%),
+    linear-gradient(145deg, #FCFAFC 0%, #F7F3F8 58%, #F2FBF8 100%);
+  min-height: 100vh;
+  padding: 32px clamp(16px, 4vw, 56px) clamp(48px, 8vh, 80px);
+}
+
+.app-page__header {
+  margin-bottom: 28px;
+}
+
+.app-page__header h1 {
+  color: var(--camaar-ink);
+  font-size: clamp(28px, 4vw, 42px);
+  letter-spacing: -0.035em;
+  margin: 0 0 10px;
+}
+
+.app-page__header p {
+  color: var(--camaar-muted);
+  margin: 0;
+}
+
+.app-panel {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid var(--camaar-border);
+  border-radius: 18px;
+  box-shadow: 0 16px 40px rgba(76, 18, 70, 0.07);
+  margin-bottom: 24px;
+  padding: clamp(18px, 3vw, 30px);
+}
+
+.app-panel h2 {
+  color: var(--camaar-ink);
+  margin-top: 0;
+}
+
+.app-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.app-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+fieldset.app-field {
+  border: 0;
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+}
+
+.app-field>label,
+.app-field>p:first-child,
+.app-field>legend {
+  color: var(--camaar-ink);
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.app-field input[type="email"],
+.app-field input[type="password"],
+.app-field input[type="text"],
+.app-field select,
+.app-field textarea,
+.template-form input[type="text"],
+.template-form select,
+.template-form textarea {
+  background: var(--camaar-surface);
+  border: 1px solid var(--camaar-border);
+  border-radius: 10px;
+  color: var(--camaar-ink);
+  padding: 0.6875rem 0.8125rem;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  width: 100%;
+}
+
+.app-field textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.app-field__select select,
+.template-form__select select {
+  appearance: none;
+  width: 100%;
+  padding-right: 3rem;
+  cursor: pointer;
+  background-image: none;
+}
+
+.app-field__select,
+.template-form__select {
+  position: relative;
+}
+
+.app-field__select-arrow,
+.template-form__select-arrow {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  width: 0.875rem;
+  height: 0.875rem;
+  transform: translateY(-50%);
+  transition: transform 0.1s;
+  pointer-events: none;
+}
+
+.app-field__select.is_open .app-field__select-arrow,
+.template-form__select.is-open .template-form__select-arrow {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.app-field input:focus,
+.app-field select:focus,
+.app-field textarea:focus,
+.template-form input[type="text"]:focus,
+.template-form select:focus,
+.template-form textarea:focus {
+  border-color: var(--camaar-accent);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.14);
+  outline: none;
+}
+
+.app-actions,
+.template-form__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.app-button {
+  align-items: center;
+  appearance: none;
+  background: linear-gradient(135deg, var(--camaar-brand), #832476);
+  border: 1px solid var(--camaar-brand);
+  border-radius: 10px;
+  color: var(--camaar-surface);
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 700;
+  justify-content: center;
+  letter-spacing: 0.01em;
+  padding: 11px 20px;
+  text-decoration: none;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.app-button:hover,
+.app-button:focus {
+  box-shadow: 0 9px 20px rgba(106, 27, 96, 0.22);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.app-button--accent {
+  background: linear-gradient(135deg, var(--camaar-accent-dark), var(--camaar-accent));
+  border-color: var(--camaar-accent-dark);
+}
+
+.app-button--accent:hover,
+.app-button--accent:focus {
+  background: linear-gradient(135deg, #065F46, var(--camaar-accent-dark));
+  box-shadow: 0 8px 18px rgba(16, 185, 129, 0.22);
+}
+
+.app-button--secondary {
+  background: var(--camaar-surface);
+  border-color: #CDBFCE;
+  color: var(--camaar-brand);
+}
+
+.app-button--secondary:hover,
+.app-button--secondary:focus {
+  background: var(--camaar-brand-soft);
+  border-color: var(--camaar-brand);
+  box-shadow: 0 8px 18px rgba(106, 27, 96, 0.10);
+}
+
+.app-button:active {
+  transform: translateY(1px);
+}
+
+.app-alert {
+  border: 1px solid;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(37, 31, 39, 0.06);
+  margin: 18px auto;
+  max-width: 720px;
+  padding: 13px 16px;
+}
+
+.app-alert--success {
+  background: var(--camaar-accent-soft);
+  border-color: #A7E8CB;
+  color: #066343;
+}
+
+.app-alert--error {
+  background: #FEF2F2;
+  border-color: #FECACA;
+  color: #991B1B;
+}
+
+.app-alert--notice {
+  background: #EFF6FF;
+  border-color: #BFDBFE;
+  color: #1E40AF;
+}
+
+.app-empty-state {
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px dashed #CDBFCE;
+  border-radius: 14px;
+  color: var(--camaar-muted);
+  padding: 28px;
+  text-align: center;
+}
+
+.app-table-wrap {
+  border: 1px solid var(--camaar-border);
+  border-radius: 14px;
+  overflow-x: auto;
+}
+
+.app-table {
+  border-collapse: collapse;
+  min-width: 680px;
+  width: 100%;
+}
+
+.app-table th,
+.app-table td {
+  border-bottom: 1px solid #EEE8EF;
+  padding: 14px 16px;
+  text-align: left;
+}
+
+.app-table th {
+  background: var(--camaar-brand-soft);
+  color: var(--camaar-brand-dark);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.app-table tbody tr:hover {
+  background: #FCF9FC;
+}
+
+.app-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.app-table .button_to,
+.app-actions .button_to {
+  margin: 0;
+}
+
+.choice-list {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+}
+
+.choice-card {
+  align-items: center;
+  background: var(--camaar-surface);
+  border: 1px solid var(--camaar-border);
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+}
+
+.choice-card:hover,
+.choice-card:focus-within {
+  background: var(--camaar-accent-soft);
+  border-color: #86DDB9;
+}
+
+.summary-list {
+  color: var(--camaar-muted);
+  line-height: 1.65;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 760px) {
+  .app-page {
+    padding-bottom: 40px;
+    padding-top: 24px;
+  }
+
+  .app-actions,
+  .template-form__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .app-button {
+    width: 100%;
+  }
+}

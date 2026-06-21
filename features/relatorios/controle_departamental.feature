@@ -14,7 +14,7 @@ Funcionalidade: Controle departamental de administradores
   Cenário: Administrador visualiza turma pertencente ao seu departamento
     Dado que existe uma matéria chamada "Introdução à Ciência da Computação" pertencente ao departamento "Departamento de Ciência da Computação"
     E que existe uma turma "A" da matéria "Introdução à Ciência da Computação" no semestre atual
-    Quando eu acesso a página de gerenciamento de turmas
+    Quando eu acesso a página de criação de formulário
     Então devo ver a turma "A" da matéria "Introdução à Ciência da Computação"
 
   @happy
@@ -25,6 +25,7 @@ Funcionalidade: Controle departamental de administradores
     Quando eu acesso a página de criação de formulário
     E seleciono a turma "A" da matéria "Introdução à Ciência da Computação"
     E seleciono o template "Avaliação de Disciplina"
+    E clico em "Continuar"
     E seleciono o público-alvo "discentes"
     E confirmo a criação do formulário
     Então devo ver uma mensagem informando que o formulário foi criado com sucesso
@@ -42,7 +43,7 @@ Funcionalidade: Controle departamental de administradores
   Cenário: Administrador não visualiza turma pertencente a outro departamento
     Dado que existe uma matéria chamada "Cálculo 1" pertencente ao departamento "Departamento de Matemática"
     E que existe uma turma "B" da matéria "Cálculo 1" no semestre atual
-    Quando eu acesso a página de gerenciamento de turmas
+    Quando eu acesso a página de criação de formulário
     Então não devo ver a turma "B" da matéria "Cálculo 1"
 
   @sad
@@ -50,11 +51,7 @@ Funcionalidade: Controle departamental de administradores
     Dado que existe uma matéria chamada "Cálculo 1" pertencente ao departamento "Departamento de Matemática"
     E que existe uma turma "B" da matéria "Cálculo 1" no semestre atual
     E que existe um template chamado "Avaliação de Disciplina"
-    Quando eu acesso a página de criação de formulário
-    E seleciono a turma "B" da matéria "Cálculo 1"
-    E seleciono o template "Avaliação de Disciplina"
-    E seleciono o público-alvo "discentes"
-    E pressiono o botão "Criar Formulário"
+    Quando tento preparar um formulário para a turma "B" da matéria "Cálculo 1" usando o template "Avaliação de Disciplina"
     Então devo ver uma mensagem informando que não tenho permissão para gerenciar essa turma
     E o formulário não deve ser criado
 

@@ -1,132 +1,186 @@
+/* Authenticated application shell, sidebar, topbar, and responsive drawer. */
+
 .dashboard-container {
+  background:
+    radial-gradient(circle at 90% 8%, rgba(110, 231, 183, 0.22), transparent 26%),
+    linear-gradient(145deg, #F9F6FA, #F2F8F6);
   display: flex;
   height: 100vh;
-  background-color: #E0E0E0;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 .sidebar {
+  background: linear-gradient(180deg, var(--camaar-brand-dark), var(--camaar-brand) 58%, #3A1036);
+  box-shadow: 8px 0 28px rgba(76, 18, 70, 0.14);
+  flex-shrink: 0;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: rgba(255, 255, 255, 0.32) transparent;
+  scrollbar-width: thin;
+  transition: margin-left 0.24s ease, transform 0.24s ease;
   width: 240px;
-  background-color: #FFFFFF;
-  border-right: 1px solid #DDD;
+}
+
+.sidebar-brand {
+  color: var(--camaar-surface);
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 28px 22px 18px;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 .sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
   list-style: none;
+  margin: 12px;
   padding: 0;
-  margin-top: 20px;
+}
+
+.sidebar-menu li {
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 .sidebar-menu li a {
+  color: rgba(255, 255, 255, 0.78);
   display: block;
-  padding: 15px 20px;
-  color: #333;
+  font-weight: 600;
+  padding: 13px 15px;
   text-decoration: none;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.sidebar-menu li a:hover {
+  background: rgba(255, 255, 255, 0.10);
+  color: var(--camaar-surface);
 }
 
 .sidebar-menu li.active {
-  background-color: #6A1B60;
+  background: linear-gradient(135deg, rgba(110, 231, 183, 0.28), rgba(255, 255, 255, 0.14));
+  box-shadow: inset 3px 0 #6EE7B7;
 }
 
 .sidebar-menu li.active a {
-  color: #FFF;
-}
-
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 20px;
-  background: #FFF;
-}
-
-.hamburger-btn {
-  font-size: 24px;
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-
-.search-container input {
-  padding: 8px 15px;
-  border-radius: 20px;
-  border: 1px solid #CCC;
-  width: 250px;
-}
-
-.user-avatar {
-  background: #6A1B60;
-  color: #FFF;
-  width: 35px;
-  height: 35px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  color: var(--camaar-surface);
 }
 
 .main-content {
-  flex: 1;
   display: flex;
+  flex: 1;
   flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
-.cards-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  padding: 30px;
+.dashboard-container.sidebar-collapsed .sidebar {
+  margin-left: -240px;
 }
 
-.card-materia {
-  background: #FFF;
-  border-radius: 8px;
-  padding: 20px;
-  width: 260px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+.sidebar-backdrop {
+  display: none;
 }
 
-.management-panel {
-  flex: 1;
-  display: flex;
+.topbar {
   align-items: center;
-  justify-content: center;
-}
-
-.center-card {
-  background: #FFF;
-  padding: 40px;
-  border-radius: 8px;
+  backdrop-filter: blur(14px);
+  background: rgba(255, 255, 255, 0.88);
+  border-bottom: 1px solid var(--camaar-border);
   display: flex;
-  flex-direction: column;
-  gap: 15px;
-  width: 400px;
+  gap: 20px;
+  justify-content: space-between;
+  padding: 14px clamp(18px, 3vw, 32px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
-.btn-action {
-  padding: 12px;
-  text-align: center;
-  border-radius: 6px;
-  text-decoration: none;
-  font-weight: 500;
+.hamburger-btn {
+  background: var(--camaar-brand-soft);
+  border: 1px solid var(--camaar-border);
+  border-radius: 10px;
+  color: var(--camaar-brand);
+  cursor: pointer;
+  font-size: 21px;
+  height: 40px;
+  width: 40px;
 }
 
-.btn-primary {
-  background-color: #10B981;
-  color: white;
+.hamburger-btn:hover,
+.hamburger-btn:focus {
+  background: var(--camaar-accent-soft);
+  border-color: #86DDB9;
+  outline: none;
 }
 
-.btn-secondary {
-  background-color: #6EE7B7;
-  color: #065F46;
+.search-container {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  max-width: 520px;
+  position: relative;
+}
+
+.search-container input[type="search"] {
+  background: #F9F7F9;
+  border: 1px solid #DDD5DF;
+  border-radius: 999px;
+  padding: 10px 48px 10px 16px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  width: 100%;
+}
+
+.search-container input[type="search"]:focus {
+  border-color: var(--camaar-accent);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.14);
+  outline: none;
+}
+
+.search-btn {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  color: var(--camaar-brand);
+  cursor: pointer;
+  display: inline-flex;
+  height: 34px;
+  justify-content: center;
+  position: absolute;
+  right: 5px;
+  width: 34px;
+}
+
+.search-btn svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
+.search-btn:hover,
+.search-btn:focus {
+  background: var(--camaar-brand-soft);
+  outline: none;
 }
 
 .user-dropdown {
-  position: relative;
   cursor: pointer;
-}
-
-.user-dropdown summary::-webkit-details-marker {
-  display: none;
+  position: relative;
 }
 
 .user-dropdown summary {
@@ -134,58 +188,123 @@
   outline: none;
 }
 
+.user-dropdown summary::-webkit-details-marker {
+  display: none;
+}
+
+.user-avatar {
+  align-items: center;
+  background: linear-gradient(135deg, var(--camaar-brand), #8C367F);
+  border: 3px solid #EAD8E8;
+  border-radius: 50%;
+  box-shadow: 0 5px 14px rgba(106, 27, 96, 0.20);
+  color: var(--camaar-surface);
+  display: flex;
+  font-weight: 700;
+  height: 38px;
+  justify-content: center;
+  width: 38px;
+}
+
 .user-dropdown .dropdown-menu {
-  position: absolute;
-  top: 50px;
-  right: 0;
-  background-color: #ffffff;
-  min-width: 240px;
-  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.15);
-  border-radius: 8px;
-  padding: 12px;
-  z-index: 1000;
-  border: 1px solid #e0e0e0;
+  background: var(--camaar-surface);
+  border: 1px solid var(--camaar-border);
+  border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(76, 18, 70, 0.16);
   cursor: default;
+  min-width: 250px;
+  padding: 14px;
+  position: absolute;
+  right: 0;
+  top: 52px;
+  z-index: 1000;
 }
 
 .dropdown-info p {
+  color: #333333;
+  font-family: inherit;
+  font-size: 14px;
   margin: 0;
   padding: 4px 0;
-  font-family: sans-serif;
-  font-size: 14px;
-  color: #333333;
 }
 
 .dropdown-info .user-name {
+  color: var(--camaar-ink);
   font-size: 15px;
-  color: #111111;
   word-break: break-word;
 }
 
 .dropdown-info .user-detail {
+  color: var(--camaar-muted);
   font-size: 13px;
-  color: #666666;
 }
 
 .dropdown-divider {
+  background: var(--camaar-border);
   height: 1px;
-  background-color: #e0e0e0;
-  margin: 8px 0;
+  margin: 10px 0;
 }
 
 .logout-btn {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: 9px;
+  color: #B91C1C !important;
   display: block;
-  text-align: center;
-  background-color: #dc3545;
-  color: white !important;
-  text-decoration: none;
-  padding: 8px;
-  border-radius: 4px;
   font-size: 14px;
-  font-weight: bold;
-  transition: background-color 0.2s;
+  font-weight: 700;
+  padding: 9px;
+  text-align: center;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
 }
 
 .logout-btn:hover {
-  background-color: #bd2130;
+  background: #FEE2E2;
+}
+
+@media (max-width: 760px) {
+  .sidebar {
+    bottom: 0;
+    left: 0;
+    margin-left: 0 !important;
+    max-width: 86vw;
+    position: fixed;
+    top: 0;
+    transform: translateX(-105%);
+    width: 300px;
+    z-index: 40;
+  }
+
+  .dashboard-container.sidebar-open .sidebar {
+    transform: translateX(0);
+  }
+
+  .sidebar-menu {
+    flex-direction: column;
+  }
+
+  .sidebar-backdrop {
+    background: rgba(37, 31, 39, 0.48);
+    border: 0;
+    bottom: 0;
+    display: block;
+    left: 0;
+    position: fixed;
+    right: 0;
+    top: 0;
+    z-index: 30;
+  }
+
+  .sidebar-backdrop[hidden] {
+    display: none;
+  }
+
+  .search-container {
+    max-width: none;
+  }
+
+  .search-container input[type="search"]::placeholder {
+    color: transparent;
+  }
 }

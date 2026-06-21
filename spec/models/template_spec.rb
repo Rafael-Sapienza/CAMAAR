@@ -44,7 +44,7 @@ RSpec.describe Template, type: :model do
 
     it "possui utilizações de questões removidas em cascata" do
       association =
-        described_class.reflect_on_association(:utilizacao_questoes)
+        described_class.reflect_on_association(:utilizacoes_questoes)
 
       expect(association.macro).to eq(:has_many)
       expect(association.class_name).to eq("UtilizacaoQuestao")
@@ -56,7 +56,7 @@ RSpec.describe Template, type: :model do
       association = described_class.reflect_on_association(:questoes)
 
       expect(association.macro).to eq(:has_many)
-      expect(association.options[:through]).to eq(:utilizacao_questoes)
+      expect(association.options[:through]).to eq(:utilizacoes_questoes)
       expect(association.options[:source]).to eq(:questao)
     end
 
@@ -82,7 +82,7 @@ RSpec.describe Template, type: :model do
       simular_utilizacoes(template, [])
 
       expect(template).not_to be_valid
-      expect(template.errors[:utilizacao_questoes])
+      expect(template.errors[:utilizacoes_questoes])
         .to include("deve conter ao menos uma questão")
     end
 
@@ -90,7 +90,7 @@ RSpec.describe Template, type: :model do
       simular_utilizacoes(template, [ utilizacao_removida ])
 
       expect(template).not_to be_valid
-      expect(template.errors[:utilizacao_questoes])
+      expect(template.errors[:utilizacoes_questoes])
         .to include("deve conter ao menos uma questão")
     end
 
@@ -127,6 +127,67 @@ RSpec.describe Template, type: :model do
     end
   end
 
+  describe "atributos aninhados" do
+    it "remove utilizações de questões marcadas para destruição" do
+      template_com_questoes = create_template_with_questoes(
+        titulo: "Avaliação com duas questões"
+      )
+      utilizacao_removida = template_com_questoes.utilizacoes_questoes.first
+      questao = utilizacao_removida.questao
+
+      expect do
+        template_com_questoes.update!(
+          utilizacoes_questoes_attributes: {
+            "0" => {
+              id: utilizacao_removida.id,
+              _destroy: "1"
+            }
+          }
+        )
+      end.to change(UtilizacaoQuestao, :count).by(-1)
+
+      expect(UtilizacaoQuestao.exists?(utilizacao_removida.id)).to be(false)
+      expect(Questao.exists?(questao.id)).to be(true)
+    end
+
+    it "remove opções marcadas para destruição" do
+      template_com_questao_objetiva = create_template_with_questoes(
+        titulo: "Avaliação objetiva",
+        questoes: [
+          {
+            enunciado: "Como você avalia a disciplina?",
+            tipo: :objetiva,
+            opcoes: %w[Ruim Regular Bom]
+          }
+        ]
+      )
+      utilizacao = template_com_questao_objetiva.utilizacoes_questoes.first
+      questao = utilizacao.questao
+      opcao_removida = questao.opcoes.first
+
+      expect do
+        template_com_questao_objetiva.update!(
+          utilizacoes_questoes_attributes: {
+            "0" => {
+              id: utilizacao.id,
+              questao_attributes: {
+                id: questao.id,
+                opcoes_attributes: {
+                  "0" => {
+                    id: opcao_removida.id,
+                    _destroy: "1"
+                  }
+                }
+              }
+            }
+          }
+        )
+      end.to change(Opcao, :count).by(-1)
+
+      expect(Opcao.exists?(opcao_removida.id)).to be(false)
+    end
+  end
+
   describe "#criado_por?" do
     it "retorna verdadeiro quando o perfil é o administrador criador" do
       perfil_adm = double("PerfilAdm", id: 1)
@@ -141,7 +202,7 @@ RSpec.describe Template, type: :model do
 
   def simular_utilizacoes(template, utilizacoes)
     allow(template)
-      .to receive(:utilizacao_questoes)
+      .to receive(:utilizacoes_questoes)
       .and_return(utilizacoes)
   end
 end

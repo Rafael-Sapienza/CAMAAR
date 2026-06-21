@@ -11,13 +11,13 @@ class Questao < ApplicationRecord
     optional: true,
     inverse_of: :questoes
 
-  has_many :utilizacao_questoes,
+  has_many :utilizacoes_questoes,
     class_name: "UtilizacaoQuestao",
     foreign_key: :questao_id,
     inverse_of: :questao,
     dependent: :restrict_with_error
 
-  has_many :templates, through: :utilizacao_questoes, source: :template
+  has_many :templates, through: :utilizacoes_questoes, source: :template
 
   has_many :opcoes,
     class_name: "Opcao",

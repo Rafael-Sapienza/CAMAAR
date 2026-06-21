@@ -8,3 +8,56 @@
  *
  * Consider organizing styles into separate files for maintainability.
  */
+
+:root {
+  --camaar-accent: #10B981;
+  --camaar-accent-dark: #047857;
+  --camaar-accent-soft: #ECFDF5;
+  --camaar-brand: #6A1B60;
+  --camaar-brand-dark: #4C1246;
+  --camaar-brand-soft: #F7EDF6;
+  --camaar-border: #E7DEE8;
+  --camaar-ink: #251F27;
+  --camaar-muted: #6F6672;
+  --camaar-surface: #FFFFFF;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  color: var(--camaar-ink);
+  font-family:
+    "IBM Plex Sans",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+code,
+kbd,
+pre,
+samp {
+  font-family:
+    "Fira Code",
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace;
+}

@@ -75,11 +75,11 @@ RSpec.describe "Fluxo de Cadastro (Primeiro Acesso)", type: :request do
       )
     end
 
-    it "rejeita se a senha tiver menos de 6 caracteres" do
+    it "rejeita se a senha tiver menos de 8 caracteres" do
       post confirmar_cadastro_path, params: { token: "token_secreto_123", senha: "123", senha_confirmacao: "123" }
 
       expect(response).to redirect_to(confirmar_cadastro_path(token: "token_secreto_123"))
-      expect(flash[:error]).to eq("A senha deve conter pelo menos 6 caracteres.")
+      expect(flash[:error]).to eq("A senha deve conter pelo menos 8 caracteres.")
     end
 
     it "rejeita se as senhas digitadas não coincidirem" do

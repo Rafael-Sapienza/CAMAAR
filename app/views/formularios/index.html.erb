@@ -1,28 +1,45 @@
-<h1>Gerenciamento de Formulários</h1>
+<main class="app-page">
+  <% if notice %>
+    <p class="app-alert app-alert--success"><%= notice %></p>
+  <% end %>
 
-<% if @formularios.any? %>
-  <table>
-    <thead>
-      <tr>
-        <th>Template</th>
-        <th>Turma</th>
-        <th>Público-alvo</th>
-        <th>Ação</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @formularios.each do |formulario| %>
-        <tr>
-          <td><%= formulario.template.titulo %></td>
-          <td><%= formulario.turma.nome_exibicao %></td>
-          <td><%= formulario.docentes? ? "Docentes" : "Discentes" %></td>
-          <td>
-            <%= button_to "Gerar Relatório de Respostas", "#", method: :get %>
-          </td>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
-<% else %>
-  <p>Nenhum formulário criado para este semestre</p>
-<% end %>
+  <% if alert %>
+    <p class="app-alert app-alert--error"><%= alert %></p>
+  <% end %>
+
+  <header class="app-page__header">
+    <h1>Gerenciamento de Formulários</h1>
+    <p>Acompanhe os formulários publicados no semestre atual.</p>
+  </header>
+
+  <section class="app-panel">
+    <% if @formularios.any? %>
+      <div class="app-table-wrap">
+        <table class="app-table">
+          <thead>
+            <tr>
+              <th>Template</th>
+              <th>Turma</th>
+              <th>Público-alvo</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @formularios.each do |formulario| %>
+              <tr>
+                <td><%= formulario.template&.titulo || "Template removido" %></td>
+                <td><%= formulario.turma.nome_exibicao %></td>
+                <td><%= formulario.docentes? ? "Docentes" : "Discentes" %></td>
+                <td>
+                  <%= button_to "Gerar Relatório de Respostas", formulario_path(formulario), method: :get, class: "app-button app-button--secondary" %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <p class="app-empty-state">Nenhum formulário criado para este semestre</p>
+    <% end %>
+  </section>
+</main>

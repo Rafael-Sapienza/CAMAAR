@@ -10,8 +10,8 @@ module Formularios
       new(template_id:, turma_ids:, publico_alvo:, perfil_adm:).call
     end
 
-    def self.validate_preparacao!(template_id:, turma_ids:)
-      new(template_id:, turma_ids:, publico_alvo: :docentes, perfil_adm: nil).validate_preparacao!
+    def self.validate_preparacao!(template_id:, turma_ids:, perfil_adm:)
+      new(template_id:, turma_ids:, publico_alvo: :docentes, perfil_adm:).validate_preparacao!
     end
 
     def initialize(template_id:, turma_ids:, publico_alvo:, perfil_adm:)
@@ -61,7 +61,7 @@ module Formularios
     end
 
     def validate_template!
-      raise Error, SEM_QUESTOES if template.utilizacao_questoes.raizes.none?
+      raise Error, SEM_QUESTOES if template.utilizacoes_questoes.raizes.none?
     end
 
     def validate_turmas!
@@ -82,11 +82,14 @@ module Formularios
     end
 
     def turmas
-      @turmas ||= Turma.do_semestre_atual.where(id: turma_ids)
+      @turmas ||= Turma
+        .do_departamento(perfil_adm.departamento)
+        .do_semestre_atual
+        .where(id: turma_ids)
     end
 
     def copy_questoes_from_template!(formulario)
-      template.utilizacao_questoes.raizes.ordenadas.each do |utilizacao|
+      template.utilizacoes_questoes.raizes.ordenadas.each do |utilizacao|
         questao_origem = utilizacao.questao
 
         questao = formulario.questoes.build(

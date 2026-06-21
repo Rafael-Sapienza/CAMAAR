@@ -31,3 +31,26 @@ Funcionalidade: Responder questionário da turma
     E que já respondi o formulário da turma "Cálculo 1" anteriormente
     Quando eu tento acessar a página de resposta do formulário da turma "Cálculo 1"
     Então devo ver uma mensagem informando que esta avaliação já foi respondida
+
+  @sad
+  Cenário: Participante tenta acessar avaliação de outro participante pela URL
+    Dado que estou autenticado como participante
+    E que existe uma avaliação pendente pertencente a outro participante
+    Quando tento acessar essa avaliação pela URL
+    Então devo ver uma mensagem informando que a avaliação não foi encontrada
+
+  @sad
+  Cenário: Participante tenta enviar opção pertencente a outra questão
+    Dado que estou autenticado como participante
+    E que estou na página de resposta do formulário da turma "Cálculo 1"
+    Quando envio uma opção pertencente a outra questão
+    Então devo ver uma mensagem informando que todas as questões obrigatórias devem ser preenchidas
+    E a avaliação não deve ser registrada
+
+  @happy
+  Cenário: Participante responde formulário após exclusão do template de origem
+    Dado que estou autenticado como participante
+    E que estou na página de resposta do formulário da turma "Cálculo 1"
+    E que o template de origem do formulário foi excluído
+    Quando eu tento acessar a página de resposta do formulário da turma "Cálculo 1"
+    Então devo continuar vendo as questões copiadas para o formulário

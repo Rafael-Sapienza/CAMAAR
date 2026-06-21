@@ -4,12 +4,12 @@ class UtilizacaoQuestao < ApplicationRecord
   belongs_to :template,
     class_name: "Template",
     foreign_key: :template_id,
-    inverse_of: :utilizacao_questoes
+    inverse_of: :utilizacoes_questoes
 
   belongs_to :questao,
     class_name: "Questao",
     foreign_key: :questao_id,
-    inverse_of: :utilizacao_questoes
+    inverse_of: :utilizacoes_questoes
 
   belongs_to :parent,
     class_name: "UtilizacaoQuestao",

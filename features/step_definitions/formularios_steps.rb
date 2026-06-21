@@ -49,6 +49,11 @@ Dado("que estou na página de criação de formulários") do
   visit new_formulario_path
 end
 
+Dado("que estou visualizando o template cadastrado chamado {string}") do |titulo|
+  @template = Template.find_by!(titulo: titulo)
+  visit template_path(@template)
+end
+
 Dado("que selecionei o template {string}") do |titulo|
   administrador_formularios
   @template = criar_template_com_questoes(titulo: titulo)
@@ -65,6 +70,10 @@ end
 
 Quando("eu seleciono o template {string}") do |titulo|
   select titulo, from: "template_id"
+end
+
+Quando("solicito criar um formulário a partir desse template") do
+  click_link "Usar em Formulário"
 end
 
 Quando("seleciono as turmas {string} e {string}") do |nome_turma_a, nome_turma_b|
@@ -100,6 +109,14 @@ Quando("confirmo a publicação do formulário") do
   click_button "Confirmar Publicação"
 end
 
+Quando("tento confirmar a publicação sem selecionar template e turmas") do
+  page.driver.submit(
+    :post,
+    formularios_path,
+    { publico_alvo: "docentes" }
+  )
+end
+
 Quando("eu acesso o painel de gerenciamento de formulários") do
   visit formularios_path
 end
@@ -126,6 +143,13 @@ Então("o formulário deve ser gerado com sucesso para ambas as turmas") do
     expect(questoes_formulario.count).to eq(questoes_template.count)
     expect(questoes_formulario.pluck(:enunciado)).to eq(questoes_template.map(&:enunciado))
   end
+end
+
+Então("devo estar na página de criação de formulários com o template {string} selecionado") do |titulo|
+  expect(page).to have_current_path(
+    new_formulario_path(template_id: @template.id)
+  )
+  expect(page).to have_select("template_id", selected: titulo)
 end
 
 Então("eu devo ver uma lista com todos os formulários criados, exibindo o template base, a turma e o público-alvo de cada um") do

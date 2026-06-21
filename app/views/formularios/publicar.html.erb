@@ -1,36 +1,45 @@
-<h1>Publicar Formulário</h1>
+<main class="app-page">
+  <header class="app-page__header">
+    <h1>Publicar Formulário</h1>
+    <p>Revise os dados e defina quem responderá à avaliação.</p>
+  </header>
 
-<% if flash[:notice] %>
-  <p><%= flash[:notice] %></p>
-<% end %>
+  <% if flash[:notice] %>
+    <div class="app-alert app-alert--notice"><%= flash[:notice] %></div>
+  <% end %>
 
-<% if flash[:alert] %>
-  <p><%= flash[:alert] %></p>
-<% end %>
+  <% if flash[:alert] %>
+    <div class="app-alert app-alert--error"><%= flash[:alert] %></div>
+  <% end %>
 
-<div>
-  <h2>Resumo</h2>
-  <p><strong>Template:</strong> <%= @template.titulo %></p>
-  <p><strong>Turmas:</strong></p>
-  <ul>
-    <% @turmas.each do |turma| %>
-      <li><%= turma.nome_exibicao %></li>
-    <% end %>
-  </ul>
-</div>
+  <section class="app-panel">
+    <h2>Resumo</h2>
+    <div class="summary-list">
+      <p><strong>Template:</strong> <%= @template.titulo %></p>
+      <p><strong>Turmas:</strong></p>
+      <ul>
+        <% @turmas.each do |turma| %>
+          <li><%= turma.nome_exibicao %></li>
+        <% end %>
+      </ul>
+    </div>
+  </section>
 
-<%= form_with url: formularios_path do |form| %>
-  <div>
-    <p>Público-alvo</p>
-    <% Formulario.publico_alvos.each do |valor, _| %>
-      <div>
-        <label>
-          <%= radio_button_tag :publico_alvo, valor, false, id: "publico_alvo_#{valor}" %>
-          <%= valor == "docentes" ? "Docentes" : "Discentes" %>
-        </label>
+  <%= form_with url: formularios_path, class: "app-panel app-form" do |form| %>
+    <fieldset class="app-field">
+      <legend>Público-alvo</legend>
+      <div class="choice-list">
+        <% Formulario.publico_alvos.each do |valor, _| %>
+          <label class="choice-card">
+            <%= radio_button_tag :publico_alvo, valor, false, id: "publico_alvo_#{valor}" %>
+            <span><%= valor == "docentes" ? "Docentes" : "Discentes" %></span>
+          </label>
+        <% end %>
       </div>
-    <% end %>
-  </div>
+    </fieldset>
 
-  <%= form.submit "Confirmar Publicação" %>
-<% end %>
+    <div class="app-actions">
+      <%= form.submit "Confirmar Publicação", class: "app-button app-button--accent" %>
+    </div>
+  <% end %>
+</main>

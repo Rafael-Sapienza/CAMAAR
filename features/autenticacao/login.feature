@@ -32,7 +32,7 @@ Funcionalidade: Login de Usuários
     Quando eu preencho o campo "E-mail ou Matrícula" com "aluno@unb.br"
     E preencho o campo "Senha" com "SenhaErrada!"
     E clico no botão "Entrar"
-    Então devo ver a mensagem de erro "E-mail/Matrícula ou senha inválidos"
+    Então devo ver a mensagem de erro "Senha incorreta."
     E permaneço na página de login
 
   @sad
@@ -41,12 +41,12 @@ Funcionalidade: Login de Usuários
     Quando eu deixo o campo "E-mail ou Matrícula" vazio
     E deixo o campo "Senha" vazio
     E clico no botão "Entrar"
-    Então devo ver o aviso "Campos obrigatórios não preenchidos"
+    Então devo ver o aviso "Informe sua matrícula ou e-mail e sua senha."
 
   @sad
   Cenário: Tentativa de login sem preencher a senha
     Dado que estou na página de login
-    Quando eu preencho o campo "E-mail ou Matrícula" com "usuario@email.com"
+    Quando eu preencho o campo "E-mail ou Matrícula" com "aluno@unb.br"
     E deixo o campo "Senha" vazio
     E clico no botão "Entrar"
-    Então devo ver o aviso "O campo Senha é obrigatório"
+    Então devo ver o aviso "Informe sua senha."
