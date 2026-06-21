@@ -42,7 +42,7 @@ class FormulariosController < ApplicationController
     )
 
     redirect_to formularios_path,
-      notice: "Formulário criado com sucesso para a turma selecionada"
+      notice: "Formulário criado com sucesso para as turmas selecionadas"
   rescue Formularios::Error, ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound => e
     carregar_opcoes_de_selecao
     flash.now[:alert] = e.is_a?(ActiveRecord::RecordNotFound) ? "Template ou turma não encontrados" : e.message
@@ -61,7 +61,6 @@ class FormulariosController < ApplicationController
       )
 
     questoes = @formulario.questoes.order(:id)
-    questoes = @formulario.questoes.order(:id)
     csv_data = CSV.generate(headers: true, col_sep: ";") do |csv|
       csv << [ "Aluno", "Matrícula", *questoes.map(&:enunciado) ]
 
@@ -78,22 +77,17 @@ class FormulariosController < ApplicationController
   private
 
   def carregar_opcoes_de_selecao
-    admin_ids_do_departamento = PerfilAdm
-      .where(departamento_id: current_administrador.departamento_id)
-      .pluck(:id)
-
     @templates_proprios = Template.where(adm_id: current_administrador.id).order(:titulo)
-    @templates_outros = Template
-      # .where(adm_id: admin_ids_do_departamento)
-      .where.not(adm_id: current_administrador.id)
-      .order(:titulo)
+    @templates_outros = Template.where.not(adm_id: current_administrador.id).order(:titulo)
 
     @materias = materias_do_departamento
     @materia_selecionada = params[:materia_id].presence
-    @mostrar_todas_turmas = ActiveModel::Type::Boolean.new.cast(params[:todas_turmas])
+
+    @somente_semestre_atual = params[:somente_semestre_atual] == "1"
+
     @turmas = turmas_do_departamento(
       materia_id: @materia_selecionada,
-      todas: @mostrar_todas_turmas
+      somente_atual: @somente_semestre_atual # Passando a nova regra
     )
   end
 
@@ -101,13 +95,13 @@ class FormulariosController < ApplicationController
     Materia.do_departamento(current_administrador.departamento).order(:nome)
   end
 
-  def turmas_do_departamento(materia_id: nil, todas: false)
+  def turmas_do_departamento(materia_id: nil, somente_atual: false)
     escopo = Turma
       .do_departamento(current_administrador.departamento)
+      .sem_formulario
       .includes(:materia)
       .order("materias.nome", :numero)
-
-    escopo = escopo.do_semestre_atual unless todas
+    escopo = escopo.do_semestre_atual if somente_atual
     escopo = escopo.where(materia_id: materia_id) if materia_id.present?
     escopo
   end

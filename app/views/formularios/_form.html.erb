@@ -1,23 +1,31 @@
-<%= form_with url: new_formulario_path, method: :get, class: "template-form__filtro" do %>
-  <div class="template-form__field">
-    <label for="materia_id">Filtrar por matéria</label>
-    <%= select_tag :materia_id,
-                   options_from_collection_for_select(materias, :id, :nome, materia_selecionada),
-                   include_blank: "Todas as matérias",
-                   onchange: "this.form.requestSubmit()" %>
-  </div>
+<%# Formulário de Filtro %>
+<%= form_with url: new_formulario_path, method: :get, class: "template-form", style: "margin-bottom: 2rem;" do %>
+  <div class="template-form__metadata-fields" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; align-items: center;">
+    
+    <div class="template-form__field">
+      <label for="materia_id">Filtrar por matéria</label>
+      <%= select_tag :materia_id,
+                     options_from_collection_for_select(materias, :id, :nome, materia_selecionada),
+                     include_blank: "Todas as matérias",
+                     onchange: "this.form.requestSubmit()" %>
+    </div>
 
-  <div class="template-form__field">
-    <label>
-      <%= check_box_tag :todas_turmas, "1", mostrar_todas_turmas, onchange: "this.form.requestSubmit()" %>
-      Mostrar turmas de todos os semestres
-    </label>
+    <div class="template-form__field" style="margin-top: 1.5rem;">
+      <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+        <%= check_box_tag :somente_semestre_atual, "1", somente_semestre_atual, onchange: "this.form.requestSubmit()" %>
+        <strong>Mostrar apenas turmas do semestre atual</strong>
+      </label>
+    </div>
+
   </div>
 <% end %>
 
+<hr style="margin-bottom: 2rem;">
+
+<%# Formulário de Submissão %>
 <%= form_with url: formularios_path, class: "template-form" do |form| %>
   <% if flash[:alert] %>
-    <div>
+    <div class="app-alert app-alert--error">
       <p><%= flash[:alert] %></p>
     </div>
   <% end %>
@@ -28,13 +36,15 @@
     </summary>
 
     <div class="template-form__metadata-fields">
+      
+      <%# Seleção de Template %>
       <div class="template-form__field">
-        <label for="template_id">Template</label>
+        <label for="template_id">Template base</label>
 
         <% if templates_proprios.empty? && templates_outros.empty? %>
-          <p>Nenhum template disponível. Crie um template antes de montar um formulário.</p>
+          <p class="app-empty-state">Nenhum template disponível. Crie um template antes de montar um formulário.</p>
         <% else %>
-          <select name="template_id" id="template_id">
+          <select name="template_id" id="template_id" required>
             <option value="">Selecione um template</option>
 
             <% if templates_proprios.any? %>
@@ -56,43 +66,53 @@
         <% end %>
       </div>
 
+      <%# Seleção de Público-alvo utilizando os cards de opções %>
       <div class="template-form__field">
-        <p>Turma</p>
+        <label>Público-alvo</label>
+        <div class="template-options__list" style="margin-top: 0.5rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+          <% Formulario.publico_alvos.each do |valor, _| %>
+            <div class="template-option">
+              <label class="template-option__content" style="cursor: pointer; display: flex; align-items: center; gap: 0.75rem; width: 100%; padding: 0.75rem;">
+                <%= radio_button_tag :publico_alvo, valor, false, id: "publico_alvo_#{valor}", required: true %>
+                <p style="margin: 0; font-weight: 500;"><%= valor == "docentes" ? "Docentes" : "Discentes" %></p>
+              </label>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <%# Seleção de Turmas estilizada como agrupamentos de opções %>
+      <div class="template-form__field">
+        <label style="margin-bottom: 1rem;">Selecione as Turmas Alvo</label>
+        
         <% if turmas.any? %>
           <% turmas.group_by(&:materia).each do |materia, turmas_da_materia| %>
-            <fieldset>
-              <legend><%= materia.nome %> (<%= materia.codigo %>)</legend>
-              <% turmas_da_materia.each do |turma| %>
-                <div>
-                  <label>
-                    <%= radio_button_tag "turma_ids[]", turma.id, false, id: "turma_#{turma.id}" %>
-                    <%= turma.nome_exibicao %>
-                  </label>
-                </div>
-              <% end %>
+            <fieldset class="template-options" style="margin-bottom: 1.5rem; border-radius: 8px;">
+              <legend style="font-weight: 600; padding: 0 0.5rem;"><%= materia.nome %> (<%= materia.codigo %>)</legend>
+              
+              <div class="template-options__list" style="padding: 0.5rem 0 0 0;">
+                <% turmas_da_materia.each do |turma| %>
+                  <div class="template-option">
+                    <label class="template-option__content" style="cursor: pointer; display: flex; align-items: center; gap: 0.75rem; width: 100%; padding: 0.75rem;">
+                      <%= check_box_tag "turma_ids[]", turma.id, false, id: "turma_#{turma.id}" %>
+                      <p style="margin: 0;"><%= turma.nome_exibicao %></p>
+                    </label>
+                  </div>
+                <% end %>
+              </div>
             </fieldset>
           <% end %>
         <% else %>
-          <p>Nenhuma turma encontrada para o filtro selecionado.</p>
+          <p class="app-empty-state">Nenhuma turma sem formulário encontrada para o filtro selecionado.</p>
         <% end %>
       </div>
 
-      <div class="template-form__field">
-        <p>Público-alvo</p>
-        <% Formulario.publico_alvos.each do |valor, _| %>
-          <div>
-            <label>
-              <%= radio_button_tag :publico_alvo, valor, false, id: "publico_alvo_#{valor}" %>
-              <%= valor == "docentes" ? "Docentes" : "Discentes" %>
-            </label>
-          </div>
-        <% end %>
-      </div>
     </div>
   </details>
 
+  <%# Ações com ordem corrigida (Voltar na esquerda, Publicar na direita) e classes oficiais %>
   <div class="template-form__actions">
-    <%= form.submit "Publicar formulário", class: "template-form__submit" %>
-    <%= button_tag "Voltar", onclick: "window.location.href='#{formularios_path}'", class: "template-form__submit", type: :button %>
+    <%= link_to "Voltar", formularios_path, class: "app-button app-button--secondary" %>
+    <%= form.submit "Publicar formulário", class: "app-button" %>
   </div>
 <% end %>

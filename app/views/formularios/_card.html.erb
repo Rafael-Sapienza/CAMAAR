@@ -1,7 +1,8 @@
 <article class="template-form__card" data-formulario-id="<%= formulario.id %>">
   <%= link_to formulario_path(formulario), class: "template-form__card-link" do %>
     <div class="template-form__card-content">
-      <h3 class="template-form__card-title"><%= formulario.template.titulo %></h3>
+      <%# Proteção com &. caso o template de origem tenha sido excluído %>
+      <h3 class="template-form__card-title"><%= formulario.template&.titulo || "Template removido" %></h3>
       <p class="template-form__card-description"><%= formulario.turma.nome_exibicao %></p>
     </div>
 

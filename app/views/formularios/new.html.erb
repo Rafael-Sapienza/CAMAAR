@@ -1,44 +1,18 @@
-<main class="app-page">
-  <header class="app-page__header">
+<main class="app-page template-page">
+  <header class="template-page__header" style="flex-direction: column; align-items: flex-start; gap: 0.5rem;">
     <h1>Criar Formulário</h1>
-    <p>Escolha um template e as turmas que receberão a avaliação.</p>
+    <p class="template-show__description">Escolha um template, filtre e selecione as turmas que receberão a avaliação.</p>
   </header>
 
   <% if flash[:notice] %>
-    <div class="app-alert app-alert--notice"><%= flash[:notice] %></div>
+    <div class="app-alert app-alert--success"><%= flash[:notice] %></div>
   <% end %>
 
-  <% if flash[:alert] %>
-    <div class="app-alert app-alert--error"><%= flash[:alert] %></div>
-  <% end %>
-
-  <%= form_with url: preparar_formularios_path, class: "app-panel app-form" do |form| %>
-    <div class="app-field">
-      <label for="template_id">Template</label>
-      <%= select_tag :template_id,
-                     options_from_collection_for_select(
-                       @templates,
-                       :id,
-                       :titulo,
-                       @template_selecionado&.id
-                     ),
-                     prompt: "Selecione um template" %>
-    </div>
-
-    <fieldset class="app-field">
-      <legend>Turmas</legend>
-      <div class="choice-list">
-        <% @turmas.each do |turma| %>
-          <label class="choice-card">
-            <%= check_box_tag "turma_ids[]", turma.id, false, id: "turma_#{turma.id}" %>
-            <span><%= turma.nome_exibicao %></span>
-          </label>
-        <% end %>
-      </div>
-    </fieldset>
-
-    <div class="app-actions">
-      <%= form.submit "Continuar", class: "app-button" %>
-    </div>
-  <% end %>
+  <%= render "form", 
+             templates_proprios: @templates_proprios, 
+             templates_outros: @templates_outros, 
+             materias: @materias, 
+             materia_selecionada: @materia_selecionada, 
+             somente_semestre_atual: @somente_semestre_atual, # Variável atualizada
+             turmas: @turmas %>
 </main>
