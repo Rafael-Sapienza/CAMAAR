@@ -37,7 +37,7 @@ class TemplatesController < ApplicationController
     else
       preparar_campos_do_template
 
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -57,7 +57,7 @@ class TemplatesController < ApplicationController
     else
       preparar_campos_do_template
 
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 

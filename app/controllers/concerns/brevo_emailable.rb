@@ -112,7 +112,7 @@ module BrevoEmailable
     payload = {
       "sender"      => REMETENTE,
       "to"          => [ { "email" => destinatario } ],
-      "subject"     => "Convite de Cadastro no CAMAAR — Professor(a) #{nome_admin}",
+      "subject"     => "Convite de Cadastro no CAMAAR — Administrador(a) #{nome_admin}",
       "htmlContent" => <<~HTML
         <html>
         <body style="font-family: sans-serif; color: #333; line-height: 1.6;">

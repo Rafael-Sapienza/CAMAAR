@@ -56,6 +56,8 @@ group :development, :test do
   gem "rubocop-rails-omakase", require: false
 
   gem "rspec-rails", require: false
+
+  gem "rubocop-rails", require: false # Gema para medir complexidade ciclomática
 end
 
 group :development do
@@ -71,6 +73,6 @@ group :test do
   gem "capybara"
   gem "selenium-webdriver"
   gem "cucumber-rails", require: false
-  gem "simplecov", require: false
+  gem "simplecov", require: false # Garante cobertura de testes no rspec
   gem "database_cleaner-active_record"
 end

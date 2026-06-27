@@ -173,11 +173,11 @@ RSpec.describe "Formularios", type: :request do
       get new_formulario_path(template_id: template.id)
 
       pagina = Nokogiri::HTML(response.body)
-      opcao_selecionada = pagina.at_css("select#template_id option[selected]")
+      template_selecionado = pagina.at_css("input[name='template_id'][checked]")
 
       expect(response).to have_http_status(:ok)
-      expect(opcao_selecionada["value"]).to eq(template.id.to_s)
-      expect(opcao_selecionada.text).to eq(template.titulo)
+      expect(template_selecionado["value"]).to eq(template.id.to_s)
+      expect(template_selecionado.ancestors("label").first.text).to include(template.titulo)
     end
   end
 
@@ -237,7 +237,7 @@ RSpec.describe "Formularios", type: :request do
         post formularios_path, params: criar_formulario_params(turma_ids: [ turma_a.id ], publico_alvo: "")
       end.not_to change(Formulario, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include("Por favor, selecione o público-alvo do formulário")
     end
 

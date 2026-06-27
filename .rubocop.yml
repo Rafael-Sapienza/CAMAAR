@@ -12,3 +12,10 @@ Layout/IndentationWidth:
 
 Layout/IndentationConsistency:
   Enabled: true
+
+Metrics/CyclomaticComplexity:
+  Max: 9
+  Exclude:
+    - 'db/migrate/*'
+    - 'config/**/*'
+    - 'bin/**/*'

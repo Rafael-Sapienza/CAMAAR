@@ -1,0 +1,27 @@
+<% if flash[:success] %>
+  <div class="app-alert app-alert--success">
+    <div><%= sanitize(flash[:success]) %></div>
+  </div>
+<% end %>
+
+<% if flash[:error] || flash[:alert] %>
+  <div class="app-alert app-alert--error">
+    <div>
+      <p><%= flash[:error] || flash[:alert] %></p>
+
+      <% if flash[:error_list].present? %>
+        <ul class="app-alert__list">
+          <% flash[:error_list].each do |erro| %>
+            <li><%= erro %></li>
+          <% end %>
+        </ul>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
+<% if flash[:notice] %>
+  <div class="app-alert app-alert--notice">
+    <div><%= flash[:notice] %></div>
+  </div>
+<% end %>

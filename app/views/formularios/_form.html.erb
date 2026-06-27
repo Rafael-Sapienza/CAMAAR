@@ -1,35 +1,5 @@
-<%# Formulário de Filtro %>
-<%= form_with url: new_formulario_path, method: :get, class: "template-form", style: "margin-bottom: 2rem;" do %>
-  <div class="template-form__metadata-fields" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; align-items: center;">
-    
-    <div class="template-form__field">
-      <label for="materia_id">Filtrar por matéria</label>
-      <%= select_tag :materia_id,
-                     options_from_collection_for_select(materias, :id, :nome, materia_selecionada),
-                     include_blank: "Todas as matérias",
-                     onchange: "this.form.requestSubmit()" %>
-    </div>
-
-    <div class="template-form__field" style="margin-top: 1.5rem;">
-      <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-        <%= check_box_tag :somente_semestre_atual, "1", somente_semestre_atual, onchange: "this.form.requestSubmit()" %>
-        <strong>Mostrar apenas turmas do semestre atual</strong>
-      </label>
-    </div>
-
-  </div>
-<% end %>
-
-<hr style="margin-bottom: 2rem;">
-
-<%# Formulário de Submissão %>
+<% # Formulário de Submissão %>
 <%= form_with url: formularios_path, class: "template-form" do |form| %>
-  <% if flash[:alert] %>
-    <div class="app-alert app-alert--error">
-      <p><%= flash[:alert] %></p>
-    </div>
-  <% end %>
-
   <details class="template-form__metadata" open>
     <summary class="template-form__metadata-summary">
       Dados do formulário
@@ -37,80 +7,149 @@
 
     <div class="template-form__metadata-fields">
       
-      <%# Seleção de Template %>
-      <div class="template-form__field">
-        <label for="template_id">Template base</label>
+      <% # Seleção de Template %>
+      <div class="template-form__field formulario-builder__field">
+        <div class="formulario-builder__field-header">
+          <div>
+            <label>Template base</label>
+            <p>Escolha o modelo que será usado para criar os formulários das turmas selecionadas.</p>
+          </div>
+        </div>
 
         <% if templates_proprios.empty? && templates_outros.empty? %>
           <p class="app-empty-state">Nenhum template disponível. Crie um template antes de montar um formulário.</p>
         <% else %>
-          <select name="template_id" id="template_id" required>
-            <option value="">Selecione um template</option>
-
+          <div class="formulario-template-picker">
             <% if templates_proprios.any? %>
-              <optgroup label="Meus templates">
+              <section class="formulario-template-picker__section">
+                <div class="formulario-template-picker__section-header">
+                  <h3>Meus templates</h3>
+                  <span><%= pluralize(templates_proprios.size, "template", "templates") %></span>
+                </div>
+
+                <div class="formulario-template-picker__list" role="radiogroup" aria-label="Meus templates">
                 <% templates_proprios.each do |template| %>
-                  <option value="<%= template.id %>"><%= template.titulo %></option>
+                    <label class="formulario-template-card">
+                      <%= radio_button_tag :template_id,
+                                           template.id,
+                                           template.id.to_s == template_selecionado.to_s,
+                                           required: true,
+                                           onchange: "const url = new URL(window.location.href); url.searchParams.set('template_id', this.value); const materia = document.getElementById('materia_id'); if (materia && materia.value) { url.searchParams.set('materia_id', materia.value); } else { url.searchParams.delete('materia_id'); } history.replaceState(null, '', url.toString());" %>
+                      <span class="formulario-template-card__body">
+                        <strong><%= template.titulo %></strong>
+                        <span><%= template.descricao.presence || "Sem descrição cadastrada." %></span>
+                        <small>Criado em <%= l(template.criado_em.to_date) %></small>
+                      </span>
+                    </label>
                 <% end %>
-              </optgroup>
+                </div>
+              </section>
             <% end %>
 
             <% if templates_outros.any? %>
-              <optgroup label="Templates de outros admins">
+              <section class="formulario-template-picker__section">
+                <div class="formulario-template-picker__section-header">
+                  <h3>Templates de outros admins</h3>
+                  <span><%= pluralize(templates_outros.size, "template", "templates") %></span>
+                </div>
+
+                <div class="formulario-template-picker__list" role="radiogroup" aria-label="Templates de outros admins">
                 <% templates_outros.each do |template| %>
-                  <option value="<%= template.id %>"><%= template.titulo %></option>
+                    <label class="formulario-template-card">
+                      <%= radio_button_tag :template_id,
+                                           template.id,
+                                           template.id.to_s == template_selecionado.to_s,
+                                           required: true,
+                                           onchange: "const url = new URL(window.location.href); url.searchParams.set('template_id', this.value); const materia = document.getElementById('materia_id'); if (materia && materia.value) { url.searchParams.set('materia_id', materia.value); } else { url.searchParams.delete('materia_id'); } history.replaceState(null, '', url.toString());" %>
+                      <span class="formulario-template-card__body">
+                        <strong><%= template.titulo %></strong>
+                        <span><%= template.descricao.presence || "Sem descrição cadastrada." %></span>
+                        <small>Por <%= template.adm.nome %> em <%= l(template.criado_em.to_date) %></small>
+                      </span>
+                    </label>
                 <% end %>
-              </optgroup>
+                </div>
+              </section>
             <% end %>
-          </select>
+          </div>
         <% end %>
       </div>
 
-      <%# Seleção de Público-alvo utilizando os cards de opções %>
-      <div class="template-form__field">
+      <% # Filtro de Matéria %>
+      <div class="template-form__field formulario-builder__field formulario-builder__field--compact">
+        <label for="materia_id">Filtrar por matéria</label>
+        <% materia_atual = materias.find { |materia| materia.id.to_s == materia_selecionada.to_s } %>
+
+        <details class="formulario-filter-dropdown">
+          <summary id="materia_id">
+            <span><%= materia_atual&.nome || "Todas as matérias do departamento" %></span>
+          </summary>
+
+          <div class="formulario-filter-dropdown__menu">
+            <%= link_to new_formulario_path(template_id: template_selecionado.presence),
+              class: ("is-selected" if materia_selecionada.blank?) do %>
+              Todas as matérias do departamento
+            <% end %>
+
+            <% materias.each do |materia| %>
+              <%= link_to new_formulario_path(template_id: template_selecionado.presence, materia_id: materia.id),
+                class: ("is-selected" if materia.id.to_s == materia_selecionada.to_s) do %>
+                <%= materia.nome %>
+              <% end %>
+            <% end %>
+          </div>
+        </details>
+      </div>
+
+      <% # Seleção de Público-alvo %>
+      <div class="template-form__field formulario-builder__field">
         <label>Público-alvo</label>
-        <div class="template-options__list" style="margin-top: 0.5rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+        <div class="formulario-choice-grid">
           <% Formulario.publico_alvos.each do |valor, _| %>
-            <div class="template-option">
-              <label class="template-option__content" style="cursor: pointer; display: flex; align-items: center; gap: 0.75rem; width: 100%; padding: 0.75rem;">
-                <%= radio_button_tag :publico_alvo, valor, false, id: "publico_alvo_#{valor}", required: true %>
-                <p style="margin: 0; font-weight: 500;"><%= valor == "docentes" ? "Docentes" : "Discentes" %></p>
-              </label>
-            </div>
+            <label class="formulario-choice-card">
+              <%= radio_button_tag :publico_alvo, valor, false, id: "publico_alvo_#{valor}", required: true %>
+              <span>
+                <strong><%= valor == "docentes" ? "Docentes" : "Discentes" %></strong>
+                <small><%= valor == "docentes" ? "Avaliação respondida pelos professores." : "Avaliação respondida pelos estudantes." %></small>
+              </span>
+            </label>
           <% end %>
         </div>
       </div>
 
-      <%# Seleção de Turmas estilizada como agrupamentos de opções %>
-      <div class="template-form__field">
-        <label style="margin-bottom: 1rem;">Selecione as Turmas Alvo</label>
+      <% # Seleção de Turmas %>
+      <div class="template-form__field formulario-builder__field">
+        <div class="formulario-builder__field-header">
+          <div>
+            <label>Selecione as turmas alvo</label>
+            <p>Apenas turmas vigentes do departamento são exibidas abaixo.</p>
+          </div>
+          <span class="formulario-builder__badge">Semestre atual</span>
+        </div>
         
         <% if turmas.any? %>
           <% turmas.group_by(&:materia).each do |materia, turmas_da_materia| %>
-            <fieldset class="template-options" style="margin-bottom: 1.5rem; border-radius: 8px;">
-              <legend style="font-weight: 600; padding: 0 0.5rem;"><%= materia.nome %> (<%= materia.codigo %>)</legend>
+            <fieldset class="template-options formulario-class-group">
+              <legend><%= materia.nome %> (<%= materia.codigo %>)</legend>
               
-              <div class="template-options__list" style="padding: 0.5rem 0 0 0;">
+              <div class="formulario-choice-grid formulario-choice-grid--classes">
                 <% turmas_da_materia.each do |turma| %>
-                  <div class="template-option">
-                    <label class="template-option__content" style="cursor: pointer; display: flex; align-items: center; gap: 0.75rem; width: 100%; padding: 0.75rem;">
-                      <%= check_box_tag "turma_ids[]", turma.id, false, id: "turma_#{turma.id}" %>
-                      <p style="margin: 0;"><%= turma.nome_exibicao %></p>
-                    </label>
-                  </div>
+                  <label class="formulario-choice-card formulario-choice-card--class">
+                    <%= check_box_tag "turma_ids[]", turma.id, false, id: "turma_#{turma.id}" %>
+                    <span><strong><%= turma.nome_exibicao %></strong></span>
+                  </label>
                 <% end %>
               </div>
             </fieldset>
           <% end %>
         <% else %>
-          <p class="app-empty-state">Nenhuma turma sem formulário encontrada para o filtro selecionado.</p>
+          <p class="app-empty-state">Nenhuma turma encontrada no semestre atual para o filtro selecionado.</p>
         <% end %>
       </div>
 
     </div>
   </details>
 
-  <%# Ações com ordem corrigida (Voltar na esquerda, Publicar na direita) e classes oficiais %>
   <div class="template-form__actions">
     <%= link_to "Voltar", formularios_path, class: "app-button app-button--secondary" %>
     <%= form.submit "Publicar formulário", class: "app-button" %>

@@ -4,15 +4,11 @@
     <p class="template-show__description">Escolha um template, filtre e selecione as turmas que receberão a avaliação.</p>
   </header>
 
-  <% if flash[:notice] %>
-    <div class="app-alert app-alert--success"><%= flash[:notice] %></div>
-  <% end %>
-
   <%= render "form", 
              templates_proprios: @templates_proprios, 
              templates_outros: @templates_outros, 
+             template_selecionado: @template_selecionado,
              materias: @materias, 
              materia_selecionada: @materia_selecionada, 
-             somente_semestre_atual: @somente_semestre_atual, # Variável atualizada
              turmas: @turmas %>
 </main>

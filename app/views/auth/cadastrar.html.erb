@@ -1,12 +1,6 @@
 <main class="auth-page">
-  <% if flash[:success] %>
-    <div class="app-alert app-alert--success"><%= sanitize(flash[:success]) %></div>
-  <% end %>
 
-  <% if flash[:error] %>
-    <div class="app-alert app-alert--error"><%= flash[:error] %></div>
-  <% end %>
-
+  <%= render "layouts/dashboard_shared/flash" %>
   <div class="auth-shell">
     <section class="app-panel auth-card">
       <h2>Criar Sua Senha</h2>
@@ -18,7 +12,7 @@
 
         <div class="app-field">
           <label for="password">Senha:</label>
-          <input type="password" id="password" name="senha" placeholder="No mínimo 6 caracteres" autocomplete="new-password">
+          <input type="password" id="password" name="senha" placeholder="No mínimo 8 caracteres" autocomplete="new-password">
         </div>
 
         <div class="app-field">

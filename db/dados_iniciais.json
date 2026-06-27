@@ -29,8 +29,8 @@
   "turmas": [
     {
       "numero": 1,
-      "ano": 2026,
-      "semestre": 1,
+      "ano": 2025,
+      "semestre": 2,
       "materia_codigo": "CIC0001"
     },
     {
@@ -40,14 +40,8 @@
       "materia_codigo": "CIC0001"
     },
     {
-      "numero": 3,
-      "ano": 2026,
-      "semestre": 1,
-      "materia_codigo": "CIC0001"
-    },
-    {
       "numero": 1,
-      "ano": 2026,
+      "ano": 2025,
       "semestre": 1,
       "materia_codigo": "CIC0002"
     },
@@ -59,8 +53,8 @@
     },
     {
       "numero": 1,
-      "ano": 2026,
-      "semestre": 1,
+      "ano": 2024,
+      "semestre": 2,
       "materia_codigo": "MAT0001"
     },
     {
@@ -82,7 +76,9 @@
       "turmas_lecionadas": [
         {
           "materia_codigo": "CIC0001",
-          "numero_turma": 1
+          "numero_turma": 1,
+          "ano": 2025,
+          "semestre": 2
         }
       ]
     },
@@ -97,7 +93,9 @@
       "turmas_matriculadas": [
         {
           "materia_codigo": "CIC0002",
-          "numero_turma": 1
+          "numero_turma": 2,
+          "ano": 2026,
+          "semestre": 1
         }
       ]
     },
@@ -112,7 +110,9 @@
       "turmas_matriculadas": [
         {
           "materia_codigo": "MAT0001",
-          "numero_turma": 1
+          "numero_turma": 1,
+          "ano": 2024,
+          "semestre": 2
         }
       ]
     },
@@ -127,7 +127,9 @@
       "turmas_lecionadas": [
         {
           "materia_codigo": "MAT0001",
-          "numero_turma": 2
+          "numero_turma": 2,
+          "ano": 2026,
+          "semestre": 1
         }
       ]
     }

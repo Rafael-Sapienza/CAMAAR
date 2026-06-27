@@ -4,14 +4,6 @@
     <p>Responda às avaliações disponíveis para as suas turmas.</p>
   </header>
 
-  <% if flash[:notice] %>
-    <p id="notice" class="app-alert app-alert--notice"><%= flash[:notice] %></p>
-  <% end %>
-
-  <% if flash[:alert] %>
-    <p id="alert" class="app-alert app-alert--error"><%= flash[:alert] %></p>
-  <% end %>
-
   <section class="app-panel">
     <% if @avaliacoes_pendentes.any? %>
       <div class="app-table-wrap">

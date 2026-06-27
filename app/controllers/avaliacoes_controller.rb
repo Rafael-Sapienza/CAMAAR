@@ -40,7 +40,7 @@ class AvaliacoesController < ApplicationController
       salvar_respostas_e_finalizar
     else
       flash.now[:alert] = "Todas as questões obrigatórias devem ser preenchidas."
-      render :responder, status: :unprocessable_entity
+      render :responder, status: :unprocessable_content
     end
   end
 
@@ -101,6 +101,6 @@ class AvaliacoesController < ApplicationController
       notice: "Avaliação registrada com sucesso."
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound => e
     flash.now[:alert] = "Todas as questões obrigatórias devem ser preenchidas."
-    render :responder, status: :unprocessable_entity
+    render :responder, status: :unprocessable_content
   end
 end

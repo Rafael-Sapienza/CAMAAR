@@ -45,8 +45,8 @@ class FormulariosController < ApplicationController
       notice: "Formulário criado com sucesso para as turmas selecionadas"
   rescue Formularios::Error, ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound => e
     carregar_opcoes_de_selecao
-    flash.now[:alert] = e.is_a?(ActiveRecord::RecordNotFound) ? "Template ou turma não encontrados" : e.message
-    render :new, status: :unprocessable_entity
+    flash[:alert] = e.is_a?(ActiveRecord::RecordNotFound) ? "Template ou turma não encontrados" : e.message
+    render :new, status: :unprocessable_content
   end
 
   def exportar_csv
@@ -77,31 +77,29 @@ class FormulariosController < ApplicationController
   private
 
   def carregar_opcoes_de_selecao
-    @templates_proprios = Template.where(adm_id: current_administrador.id).order(:titulo)
-    @templates_outros = Template.where.not(adm_id: current_administrador.id).order(:titulo)
+    templates = Template.includes(adm: :usuario).recentes
+
+    @templates_proprios = templates.criados_por(current_administrador)
+    @templates_outros = templates.criados_por_outros(current_administrador)
+    @template_selecionado = params[:template_id].presence
 
     @materias = materias_do_departamento
     @materia_selecionada = params[:materia_id].presence
 
-    @somente_semestre_atual = params[:somente_semestre_atual] == "1"
-
-    @turmas = turmas_do_departamento(
-      materia_id: @materia_selecionada,
-      somente_atual: @somente_semestre_atual # Passando a nova regra
-    )
+    @turmas = turmas_do_departamento(materia_id: @materia_selecionada)
   end
 
   def materias_do_departamento
     Materia.do_departamento(current_administrador.departamento).order(:nome)
   end
 
-  def turmas_do_departamento(materia_id: nil, somente_atual: false)
+  def turmas_do_departamento(materia_id: nil)
     escopo = Turma
       .do_departamento(current_administrador.departamento)
-      .sem_formulario
+      .do_semestre_atual
       .includes(:materia)
       .order("materias.nome", :numero)
-    escopo = escopo.do_semestre_atual if somente_atual
+
     escopo = escopo.where(materia_id: materia_id) if materia_id.present?
     escopo
   end

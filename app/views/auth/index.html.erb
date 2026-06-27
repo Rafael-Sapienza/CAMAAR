@@ -1,12 +1,6 @@
 <main class="auth-page">
-  <% if flash[:success] %>
-    <div class="app-alert app-alert--success"><%= sanitize(flash[:success]) %></div>
-  <% end %>
 
-  <% if flash[:error] || flash[:alert] %>
-    <div class="app-alert app-alert--error"><%= flash[:error] || flash[:alert] %></div>
-  <% end %>
-
+  <%= render "layouts/dashboard_shared/flash" %>
   <div class="auth-shell">
     <section class="app-panel auth-card">
       <h2>Acessar conta</h2>

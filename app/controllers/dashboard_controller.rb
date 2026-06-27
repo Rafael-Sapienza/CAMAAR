@@ -4,7 +4,7 @@ require "json"
 
 class DashboardController < ApplicationController
   include BrevoEmailable
-  before_action :verificar_usuario, only: %i[index pesquisar]
+  before_action :verificar_usuario, only: %i[index pesquisar sugestoes]
   before_action :verificar_admin, only: %i[gerenciamento importar_dados enviar_solicitacoes]
 
   def index
@@ -16,16 +16,27 @@ class DashboardController < ApplicationController
     @avaliacoes = Avaliacao.none
     @templates = Template.none
     @formularios = Formulario.none
+    @tipos_selecionados = tipos_selecionados
 
     return if @termo.blank?
 
+    if params[:turma_id].present?
+      @avaliacoes = avaliacoes_da_turma(params[:turma_id]) if @tipos_selecionados.include?("avaliacoes")
+
+      if current_user.administrador? && @tipos_selecionados.include?("formularios")
+        @formularios = formularios_da_turma(params[:turma_id])
+      end
+
+      return
+    end
+
     padrao = "%#{ActiveRecord::Base.sanitize_sql_like(@termo.downcase)}%"
-    @avaliacoes = pesquisar_avaliacoes(padrao)
+    @avaliacoes = pesquisar_avaliacoes(padrao) if @tipos_selecionados.include?("avaliacoes")
 
     return unless current_user.administrador?
 
-    @templates = pesquisar_templates(padrao)
-    @formularios = pesquisar_formularios(padrao)
+    @templates = pesquisar_templates(padrao) if @tipos_selecionados.include?("templates")
+    @formularios = pesquisar_formularios(padrao) if @tipos_selecionados.include?("formularios")
   end
 
   def gerenciamento
@@ -104,10 +115,12 @@ class DashboardController < ApplicationController
     rescue StandardError => e
       erros_importacao << "Matéria #{materia_json['nome']} (Código: #{codigo}): #{e.message}"
     end
-    ActiveRecord::Base.transaction do
-      dados["turmas"]&.each do |turma_json|
+    dados["turmas"]&.each do |turma_json|
+      ActiveRecord::Base.transaction do
         materia = Materia.find_by(codigo: turma_json["materia_codigo"])
-        next unless materia
+        if materia.nil?
+          raise "Matéria com código '#{turma_json['materia_codigo']}' não existe no sistema."
+        end
 
         turma = Turma.find_or_initialize_by(
           numero: turma_json["numero"],
@@ -118,6 +131,8 @@ class DashboardController < ApplicationController
         turma.save!
         turmas_ativas_ids << turma.id
       end
+    rescue StandardError => e
+      erros_importacao << "Turma nº #{turma_json['numero']} (#{turma_json['ano']}/#{turma_json['semestre']}) da matéria '#{turma_json['materia_codigo']}': #{e.message}"
     end
     dados["usuarios_docentes"]&.each do |docente_json|
       matricula = docente_json["matricula"]
@@ -143,9 +158,14 @@ class DashboardController < ApplicationController
             raise "Matéria com código '#{mat_json['materia_codigo']}' não existe no sistema."
           end
 
-          turma = Turma.find_by(materia_id: materia.id, numero: mat_json["numero_turma"], ano: 2026, semestre: 1)
+          turma = Turma.find_by(
+            materia_id: materia.id,
+            numero: mat_json["numero_turma"],
+            ano: mat_json["ano"],
+            semestre: mat_json["semestre"]
+          )
           if turma.nil?
-            raise "Turma nº #{mat_json['numero_turma']} da matéria '#{materia.nome}' não foi localizada no sistema."
+            raise "Turma nº #{mat_json['numero_turma']} (#{mat_json['ano']}/#{mat_json['semestre']}) da matéria '#{materia.nome}' não foi localizada no sistema."
           end
 
           turmas_docente_ids << turma.id
@@ -180,9 +200,14 @@ class DashboardController < ApplicationController
           if materia.nil?
             raise "Matéria com código '#{mat_json['materia_codigo']}' não existe no sistema."
           end
-          turma = Turma.find_by(materia_id: materia.id, numero: mat_json["numero_turma"], ano: 2026, semestre: 1)
+          turma = Turma.find_by(
+            materia_id: materia.id,
+            numero: mat_json["numero_turma"],
+            ano: mat_json["ano"],
+            semestre: mat_json["semestre"]
+          )
           if turma.nil?
-            raise "Turma nº #{mat_json['numero_turma']} da matéria '#{materia.nome}' não foi localizada no sistema."
+            raise "Turma nº #{mat_json['numero_turma']} (#{mat_json['ano']}/#{mat_json['semestre']}) da matéria '#{materia.nome}' não foi localizada no sistema."
           end
 
           turmas_aluno_ids << turma.id
@@ -212,15 +237,97 @@ class DashboardController < ApplicationController
     else
       redirect_to gerenciamento_path, flash: { error: "A importação foi concluída parcialmente.", error_list: erros_importacao }
     end
-  rescue JSON::ParserError
-    redirect_to gerenciamento_path,
-      flash: { error: "Os dados recebidos do SIGAA são inválidos." }
-  rescue SystemCallError, IOError
-    redirect_to gerenciamento_path,
-      flash: { error: "Não foi possível buscar os dados. Tente novamente mais tarde." }
+  end
+
+  def sugestoes
+    termo = params[:q].to_s.strip
+    return render json: [] if termo.blank?
+
+    tipos = tipos_selecionados
+    padrao = "%#{ActiveRecord::Base.sanitize_sql_like(termo.downcase)}%"
+    resultados = []
+
+    resultados += pesquisar_turmas(termo).limit(3).map do |turma|
+      {
+        tipo: "Turma",
+        titulo: turma.materia.nome, # Envia apenas o nome (ex: Estruturas de Dados)
+        subtitulo: nil, # Deixa em branco
+        materia_codigo: turma.materia.codigo, # Aciona o badge azul à direita
+        turma_codigo: turma.codigo_exibicao, # Aciona a turma abaixo do badge
+        url: turma_suggestion_url(turma, tipos)
+      }
+    end
+
+    resultados += pesquisar_materias(padrao).limit(3).map do |materia|
+      {
+        tipo: "Matéria",
+        titulo: materia.nome,
+        subtitulo: nil,
+        materia_codigo: materia.codigo, # Aciona o badge azul à direita
+        url: materia_suggestion_url(materia, tipos)
+      }
+    end
+
+    if tipos.include?("avaliacoes")
+      resultados += pesquisar_avaliacoes(padrao).limit(5).map do |avaliacao|
+        turma = avaliacao.formulario.turma
+
+        {
+          tipo: "Avaliação",
+          titulo: avaliacao.formulario.template&.titulo || "Avaliação",
+          subtitulo: turma.nome_exibicao,
+          materia_codigo: turma.materia.codigo,
+          turma_codigo: turma.codigo_exibicao,
+          url: responder_avaliacao_path(avaliacao)
+        }
+      end
+    end
+
+    if current_user.administrador?
+      if tipos.include?("templates")
+        resultados += pesquisar_templates(padrao).limit(5).map do |template|
+          {
+            tipo: "Template",
+            titulo: template.titulo,
+            subtitulo: template.descricao.presence || "Sem descrição",
+            url: template_path(template)
+          }
+        end
+      end
+
+      if tipos.include?("formularios")
+        resultados += pesquisar_formularios(padrao).limit(5).map do |formulario|
+          {
+            tipo: "Formulário",
+            titulo: formulario.template&.titulo || "Template removido",
+            subtitulo: formulario.turma.nome_exibicao,
+            materia_codigo: formulario.turma.materia.codigo,
+            turma_codigo: formulario.turma.codigo_exibicao,
+            url: formulario_path(formulario)
+          }
+        end
+      end
+    end
+
+    render json: resultados
   end
 
   private
+
+  # Sem o filtro aberto, assume as 3 categorias. Com o filtro aberto, usa
+  # exatamente o que está marcado. "sem_templates" força a exclusão mesmo
+  # que "templates" venha marcado por algum motivo (defesa, não deveria
+  # acontecer já que o checkbox fica desabilitado nesse caso).
+  def tipos_selecionados
+    tipos = if params[:filtro_ativo].present?
+              Array(params[:tipos])
+    else
+              %w[avaliacoes templates formularios]
+    end
+
+    tipos -= [ "templates" ] if params[:sem_templates] == "1"
+    tipos
+  end
 
   def verificar_usuario
     return if current_user.present?
@@ -238,11 +345,25 @@ class DashboardController < ApplicationController
       .order(created_at: :desc)
   end
 
+  def avaliacoes_da_turma(turma_id)
+    avaliacoes_do_usuario
+      .joins(:formulario)
+      .where(formularios: { turma_id: turma_id })
+  end
+
+  def formularios_da_turma(turma_id)
+    Formulario
+      .do_departamento(current_administrador.departamento)
+      .where(turma_id: turma_id)
+      .includes(:template, turma: :materia)
+      .recentes
+  end
+
   def pesquisar_avaliacoes(padrao)
     avaliacoes_do_usuario
       .joins(formulario: [ :template, { turma: :materia } ])
       .where(
-        "LOWER(templates.titulo) LIKE :padrao OR LOWER(materias.nome) LIKE :padrao",
+        "LOWER(templates.titulo) LIKE :padrao OR LOWER(materias.nome) LIKE :padrao OR LOWER(materias.codigo) LIKE :padrao",
         padrao: padrao
       )
   end
@@ -262,11 +383,65 @@ class DashboardController < ApplicationController
       .do_departamento(current_administrador.departamento)
       .joins(:template, turma: :materia)
       .where(
-        "LOWER(templates.titulo) LIKE :padrao OR LOWER(materias.nome) LIKE :padrao",
+        "LOWER(templates.titulo) LIKE :padrao OR LOWER(materias.nome) LIKE :padrao OR LOWER(materias.codigo) LIKE :padrao",
         padrao: padrao
       )
       .includes(:template, turma: :materia)
       .recentes
+  end
+
+  def pesquisar_materias(padrao)
+    Materia.where(
+      "LOWER(nome) LIKE :padrao OR LOWER(codigo) LIKE :padrao",
+      padrao: padrao
+    ).order(:nome)
+  end
+
+  # Espera o último "token" do termo como identificador de turma (letra ou
+  # número) e o restante como nome/código da matéria. Ex.: "CIC0001 A",
+  # "Estruturas de Dados 1".
+  def pesquisar_turmas(termo)
+    match = termo.match(/\A(.+?)\s+([A-Za-z]|\d{1,2})\z/)
+    return Turma.none unless match
+
+    materia_termo = match[1].strip
+    return Turma.none if materia_termo.blank?
+
+    numero = Turma.numero_de_codigo_exibicao(match[2])
+    padrao_materia = "%#{ActiveRecord::Base.sanitize_sql_like(materia_termo.downcase)}%"
+
+    Turma
+      .joins(:materia)
+      .includes(:materia)
+      .where(numero: numero)
+      .where(
+        "LOWER(materias.nome) LIKE :padrao OR LOWER(materias.codigo) LIKE :padrao",
+        padrao: padrao_materia
+      )
+      .order(:numero)
+  end
+
+  # Matéria/turma não têm relação com templates, então qualquer navegação
+  # a partir dessas sugestões já remove "templates" da lista de tipos e
+  # marca sem_templates=1, para a topbar desabilitar esse checkbox.
+  def materia_suggestion_url(materia, tipos)
+    tipos_aplicaveis = tipos - [ "templates" ]
+    tipos_aplicaveis = %w[avaliacoes formularios] if tipos_aplicaveis.empty?
+
+    pesquisa_path(q: materia.nome, filtro_ativo: "1", tipos: tipos_aplicaveis, sem_templates: "1")
+  end
+
+  def turma_suggestion_url(turma, tipos)
+    tipos_aplicaveis = tipos - [ "templates" ]
+    tipos_aplicaveis = %w[avaliacoes formularios] if tipos_aplicaveis.empty?
+
+    pesquisa_path(
+      q: turma.nome_exibicao,
+      filtro_ativo: "1",
+      tipos: tipos_aplicaveis,
+      sem_templates: "1",
+      turma_id: turma.id
+    )
   end
 
   def verificar_admin

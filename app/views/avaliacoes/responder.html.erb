@@ -4,10 +4,6 @@
     <p>Turma: <strong><%= @formulario.turma.materia.nome %></strong></p>
   </header>
 
-  <% if flash[:alert] %>
-    <p id="alert" class="app-alert app-alert--error"><%= flash[:alert] %></p>
-  <% end %>
-
   <%= form_with url: submeter_avaliacao_path(@avaliacao), method: :post, class: "app-form" do |f| %>
     <% @questoes.each_with_index do |questao, i| %>
       <section class="questao evaluation-question" id="questao-<%= questao.id %>">

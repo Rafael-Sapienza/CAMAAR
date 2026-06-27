@@ -150,7 +150,7 @@ RSpec.describe "Avaliacoes", type: :request do
         }
       end.not_to change(Resposta, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include(
         "Todas as questões obrigatórias devem ser preenchidas."
       )

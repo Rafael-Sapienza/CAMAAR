@@ -1,16 +1,4 @@
 <main class="app-page">
-  <% if flash[:success] %>
-    <div class="app-alert app-alert--success"><%= sanitize(flash[:success]) %></div>
-  <% end %>
-
-  <% if flash[:error] %>
-    <div class="app-alert app-alert--error"><%= flash[:error] %></div>
-  <% end %>
-
-  <% if flash[:notice] %>
-    <div class="app-alert app-alert--notice"><%= flash[:notice] %></div>
-  <% end %>
-
   <header class="app-page__header">
     <h1>Olá, <%= current_user.nome %></h1>
     <p>Acesse as atividades e ferramentas disponíveis para o seu perfil.</p>

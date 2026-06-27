@@ -1,14 +1,6 @@
 <main class="app-page template-page">
   <h1>Formulários</h1>
 
-  <% if notice %>
-    <p class="app-alert app-alert--success"><%= notice %></p>
-  <% end %>
-
-  <% if alert %>
-    <p class="app-alert app-alert--error"><%= alert %></p>
-  <% end %>
-
   <section id="meus-formularios" class="template-section">
     <h2>Meus Formulários</h2>
 
@@ -29,7 +21,7 @@
   </section>
 
   <section class="template-section">
-    <h2>Formulários de Outros Administradores</h2>
+    <h2>Formulários de Outros Administradores do Mesmo departamento</h2>
     <% if @other_formularios.any? %>
       <div class="template-form__cards">
         <% @other_formularios.each do |f| %>

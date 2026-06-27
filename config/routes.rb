@@ -22,6 +22,7 @@ Rails.application.routes.draw do
   get "avaliacoes", to: "dashboard#index", as: :avaliacoes
   get "avaliacoes/pendentes", to: "avaliacoes#pendentes", as: :avaliacoes_pendentes
   get "pesquisa", to: "dashboard#pesquisar", as: :pesquisa
+  get "pesquisa/sugestoes", to: "dashboard#sugestoes", as: :sugestoes_pesquisa
 
   resources :avaliacoes, only: [] do
     member do
