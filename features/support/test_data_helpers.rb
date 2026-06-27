@@ -24,24 +24,7 @@ module TestDataHelpers
       criado_em: Time.current
     )
 
-    (questoes || questoes_padrao).each_with_index do |questao_attrs, index|
-      attrs = questao_attrs.dup
-      opcoes = attrs.delete(:opcoes)
-      numero = attrs.delete(:numero) || attrs.delete(:posicao) || (index + 1)
-      attrs.delete(:obrigatoria)
-
-      questao = Questao.new(attrs)
-
-      if opcoes.present?
-        Array(opcoes).each_with_index do |texto, opcao_index|
-          questao.opcoes.build(numero: opcao_index + 1, texto: texto)
-        end
-      end
-
-      questao.save!
-
-      template.utilizacoes_questoes.build(questao: questao, numero: numero)
-    end
+    construir_questoes_do_template(template, questoes || questoes_padrao)
 
     template.save!
     template.utilizacoes_questoes.each(&:save!)
@@ -73,6 +56,38 @@ module TestDataHelpers
   end
 
   private
+
+  def construir_questoes_do_template(template, questoes)
+    questoes.each_with_index do |questao_attrs, index|
+      questao, numero = criar_questao_do_template(questao_attrs, index)
+      template.utilizacoes_questoes.build(questao: questao, numero: numero)
+    end
+  end
+
+  def criar_questao_do_template(questao_attrs, index)
+    attrs = questao_attrs.dup
+    opcoes = attrs.delete(:opcoes)
+    numero = numero_da_questao(attrs, index)
+    attrs.delete(:obrigatoria)
+
+    questao = Questao.new(attrs)
+    construir_opcoes_da_questao(questao, opcoes)
+    questao.save!
+
+    [ questao, numero ]
+  end
+
+  def numero_da_questao(attrs, index)
+    attrs.delete(:numero) || attrs.delete(:posicao) || (index + 1)
+  end
+
+  def construir_opcoes_da_questao(questao, opcoes)
+    return unless opcoes.present?
+
+    Array(opcoes).each_with_index do |texto, opcao_index|
+      questao.opcoes.build(numero: opcao_index + 1, texto: texto)
+    end
+  end
 
   def questoes_padrao
     [

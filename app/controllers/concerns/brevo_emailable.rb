@@ -7,25 +7,48 @@ module BrevoEmailable
   REMETENTE = { "name" => "CAMAAR Support", "email" => "rafaelsapienzapinheiro@gmail.com" }.freeze
 
   def chamar_api_brevo(payload, contexto: "")
-    api_key = Rails.application.credentials.dig(:brevo, :api_key)
-    unless api_key.present?
-      Rails.logger.error "[BREVO] #{contexto} — Token de API não configurado."
-      return false
-    end
+    api_key = brevo_api_key
+    return false unless brevo_api_key_configurada?(api_key, contexto)
 
-    headers = {
+    response = brevo_http.request(brevo_request(payload, api_key))
+    brevo_response_sucesso?(response, contexto)
+  rescue StandardError => e
+    Rails.logger.error "[BREVO] #{contexto} — Erro inesperado: #{e.message}"
+    false
+  end
+
+  def brevo_api_key
+    Rails.application.credentials.dig(:brevo, :api_key)
+  end
+
+  def brevo_api_key_configurada?(api_key, contexto)
+    return true if api_key.present?
+
+    Rails.logger.error "[BREVO] #{contexto} — Token de API não configurado."
+    false
+  end
+
+  def brevo_headers(api_key)
+    {
       "Accept" => "application/json",
       "api-key" => api_key,
       "Content-Type" => "application/json"
     }
+  end
 
-    http = Net::HTTP.new(BREVO_API_URL.host, BREVO_API_URL.port)
-    http.use_ssl = true
-    request = Net::HTTP::Post.new(BREVO_API_URL.path, headers)
-    request.body = payload.to_json
+  def brevo_http
+    Net::HTTP.new(BREVO_API_URL.host, BREVO_API_URL.port).tap do |http|
+      http.use_ssl = true
+    end
+  end
 
-    response = http.request(request)
+  def brevo_request(payload, api_key)
+    Net::HTTP::Post.new(BREVO_API_URL.path, brevo_headers(api_key)).tap do |request|
+      request.body = payload.to_json
+    end
+  end
 
+  def brevo_response_sucesso?(response, contexto)
     if response.is_a?(Net::HTTPSuccess)
       Rails.logger.info "[BREVO] #{contexto} — E-mail enviado com sucesso."
       true
@@ -33,9 +56,6 @@ module BrevoEmailable
       Rails.logger.error "[BREVO] #{contexto} — Falha. Código: #{response.code} | Resposta: #{response.body}"
       false
     end
-  rescue StandardError => e
-    Rails.logger.error "[BREVO] #{contexto} — Erro inesperado: #{e.message}"
-    false
   end
 
   def enviar_email_cadastro(destinatario, token)

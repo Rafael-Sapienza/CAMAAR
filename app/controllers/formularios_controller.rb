@@ -34,47 +34,74 @@ class FormulariosController < ApplicationController
   def create
     authorize! Formulario.new(adm: current_administrador)
 
+    criar_formularios_a_partir_do_template
+    redirecionar_formulario_criado
+  rescue Formularios::Error, ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound => e
+    renderizar_erro_criacao_formulario(e)
+  end
+
+  def exportar_csv
+    authorize! @formulario
+
+    send_data csv_formulario,
+      filename: nome_arquivo_csv,
+      type: "text/csv; charset=utf-8"
+  end
+
+  private
+
+  def criar_formularios_a_partir_do_template
     Formularios::CreateFromTemplate.call(
       template_id: params[:template_id],
       turma_ids: params[:turma_ids],
       publico_alvo: params[:publico_alvo],
       perfil_adm: current_administrador
     )
+  end
 
+  def redirecionar_formulario_criado
     redirect_to formularios_path,
       notice: "Formulário criado com sucesso para as turmas selecionadas"
-  rescue Formularios::Error, ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound => e
+  end
+
+  def renderizar_erro_criacao_formulario(error)
     carregar_opcoes_de_selecao
-    flash[:alert] = e.is_a?(ActiveRecord::RecordNotFound) ? "Template ou turma não encontrados" : e.message
+    flash[:alert] = mensagem_erro_criacao_formulario(error)
     render :new, status: :unprocessable_content
   end
 
-  def exportar_csv
-    authorize! @formulario
+  def mensagem_erro_criacao_formulario(error)
+    return "Template ou turma não encontrados" if error.is_a?(ActiveRecord::RecordNotFound)
 
-    avaliacoes = @formulario.avaliacoes
+    error.message
+  end
+
+  def csv_formulario
+    questoes = @formulario.questoes.order(:id)
+
+    CSV.generate(headers: true, col_sep: ";") do |csv|
+      csv << cabecalho_csv(questoes)
+      avaliacoes_com_respostas.each { |avaliacao| csv << linha_csv(avaliacao, questoes) }
+    end
+  end
+
+  def avaliacoes_com_respostas
+    @formulario.avaliacoes
       .joins(:respostas)
       .distinct
       .includes(
         participacao_turma: :usuario,
         respostas: [ :questao, :texto, { opcoes_escolhidas: :opcao } ]
       )
-
-    questoes = @formulario.questoes.order(:id)
-    csv_data = CSV.generate(headers: true, col_sep: ";") do |csv|
-      csv << [ "Aluno", "Matrícula", *questoes.map(&:enunciado) ]
-
-      avaliacoes.each do |avaliacao|
-        csv << linha_csv(avaliacao, questoes)
-      end
-    end
-
-    send_data csv_data,
-      filename: "resultados_turma_#{@formulario.turma.materia.codigo}_#{Date.current}.csv",
-      type: "text/csv; charset=utf-8"
   end
 
-  private
+  def cabecalho_csv(questoes)
+    [ "Aluno", "Matrícula", *questoes.map(&:enunciado) ]
+  end
+
+  def nome_arquivo_csv
+    "resultados_turma_#{@formulario.turma.materia.codigo}_#{Date.current}.csv"
+  end
 
   def carregar_opcoes_de_selecao
     templates = Template.includes(adm: :usuario).recentes

@@ -108,18 +108,26 @@ module Formularios
 
     def copy_questoes_from_template!(formulario)
       template.utilizacoes_questoes.raizes.ordenadas.each do |utilizacao|
-        questao_origem = utilizacao.questao
+        copy_questao_to_formulario!(formulario, utilizacao.questao)
+      end
+    end
 
-        questao = formulario.questoes.build(
-          enunciado: questao_origem.enunciado,
-          tipo: questao_origem.tipo
-        )
+    def copy_questao_to_formulario!(formulario, questao_origem)
+      questao = build_questao_from_template(formulario, questao_origem)
+      copy_opcoes_to_questao(questao, questao_origem)
+      questao.save!
+    end
 
-        questao_origem.opcoes.ordenadas.each do |opcao|
-          questao.opcoes.build(numero: opcao.numero, texto: opcao.texto)
-        end
+    def build_questao_from_template(formulario, questao_origem)
+      formulario.questoes.build(
+        enunciado: questao_origem.enunciado,
+        tipo: questao_origem.tipo
+      )
+    end
 
-        questao.save!
+    def copy_opcoes_to_questao(questao, questao_origem)
+      questao_origem.opcoes.ordenadas.each do |opcao|
+        questao.opcoes.build(numero: opcao.numero, texto: opcao.texto)
       end
     end
   end

@@ -77,21 +77,8 @@ class AvaliacoesController < ApplicationController
 
   def salvar_respostas_e_finalizar
     ActiveRecord::Base.transaction do
-      respostas_params = params[:respostas] || {}
-
       @questoes.each do |questao|
-        resposta_data = respostas_params[questao.id.to_s] || {}
-        resposta = Resposta.find_or_initialize_by(avaliacao: @avaliacao, questao: questao)
-
-        if questao.discursiva?
-          resposta.build_texto(texto: resposta_data["texto"].to_s.strip)
-        else
-          opcao_id = resposta_data["opcao_id"].to_s
-          opcao    = questao.opcoes.find(opcao_id)
-          resposta.opcoes_escolhidas.build(opcao: opcao)
-        end
-
-        resposta.save!
+        salvar_resposta_questao!(questao)
       end
 
       @avaliacao.marcar_como_respondida!
@@ -99,7 +86,44 @@ class AvaliacoesController < ApplicationController
 
     redirect_to avaliacoes_pendentes_path,
       notice: "Avaliação registrada com sucesso."
-  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound => e
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound
+    renderizar_erro_respostas
+  end
+
+  def salvar_resposta_questao!(questao)
+    resposta_data = resposta_data_questao(questao)
+    resposta = Resposta.find_or_initialize_by(avaliacao: @avaliacao, questao: questao)
+
+    preencher_resposta!(resposta, questao, resposta_data)
+    resposta.save!
+  end
+
+  def resposta_data_questao(questao)
+    respostas_params[questao.id.to_s] || {}
+  end
+
+  def respostas_params
+    params[:respostas] || {}
+  end
+
+  def preencher_resposta!(resposta, questao, resposta_data)
+    if questao.discursiva?
+      preencher_resposta_discursiva(resposta, resposta_data)
+    else
+      preencher_resposta_objetiva(resposta, questao, resposta_data)
+    end
+  end
+
+  def preencher_resposta_discursiva(resposta, resposta_data)
+    resposta.build_texto(texto: resposta_data["texto"].to_s.strip)
+  end
+
+  def preencher_resposta_objetiva(resposta, questao, resposta_data)
+    opcao = questao.opcoes.find(resposta_data["opcao_id"].to_s)
+    resposta.opcoes_escolhidas.build(opcao: opcao)
+  end
+
+  def renderizar_erro_respostas
     flash.now[:alert] = "Todas as questões obrigatórias devem ser preenchidas."
     render :responder, status: :unprocessable_content
   end

@@ -1,18 +1,42 @@
 # frozen_string_literal: true
 
 def criar_contexto_formulario_com_questoes(nome_turma)
+  usuario = usuario_contexto_resposta
+  depto = departamento_contexto_resposta
+  @turma = turma_contexto_resposta(nome_turma, depto)
+  perf_adm = perfil_adm_contexto_resposta(depto)
+  template = template_contexto_resposta(perf_adm)
+  participacao = participacao_contexto_resposta(usuario, @turma)
+
+  criar_formulario_contexto_resposta(template, perf_adm)
+  definir_questoes_contexto_resposta
+  @avaliacao = @formulario.avaliacoes.find_by!(participacao_turma: participacao)
+end
+
+def usuario_contexto_resposta
   usuario = usuario_atual || estado[:usuario_participante] || usuario_participante
   definir_usuario_atual(usuario)
+  usuario
+end
 
-  depto = Departamento.find_or_create_by!(nome: "Departamento Geral")
-  materia = Materia.find_or_create_by!(nome: nome_turma, departamento: depto) do |m|
-    m.codigo = "COD#{rand(1000..9999)}"
-  end
+def departamento_contexto_resposta
+  Departamento.find_or_create_by!(nome: "Departamento Geral")
+end
 
-  @turma = Turma.find_or_create_by!(materia: materia, ano: 2026, semestre: :primeiro) do |t|
+def turma_contexto_resposta(nome_turma, depto)
+  materia = materia_contexto_resposta(nome_turma, depto)
+  Turma.find_or_create_by!(materia: materia, ano: 2026, semestre: :primeiro) do |t|
     t.numero = rand(1..100)
   end
+end
 
+def materia_contexto_resposta(nome_turma, depto)
+  Materia.find_or_create_by!(nome: nome_turma, departamento: depto) do |m|
+    m.codigo = "COD#{rand(1000..9999)}"
+  end
+end
+
+def perfil_adm_contexto_resposta(depto)
   adm = Usuario.create!(
     nome: "Administrador",
     email: "administrador#{rand(10000)}@t.com",
@@ -20,23 +44,13 @@ def criar_contexto_formulario_com_questoes(nome_turma)
     senha: "password123",
     status: :ativo
   )
-  perf_adm = PerfilAdm.create!(usuario: adm, departamento: depto)
+  PerfilAdm.create!(usuario: adm, departamento: depto)
+end
 
-  questao_discursiva = Questao.create!(
-    enunciado: "Como você avalia a turma?",
-    tipo: :discursiva
-  )
+def template_contexto_resposta(perf_adm)
+  questao_discursiva, questao_objetiva = questoes_contexto_resposta
 
-  questao_objetiva = Questao.create!(
-    enunciado: "Qual nota você dá?",
-    tipo: :objetiva,
-    opcoes_attributes: [
-      { numero: 1, texto: "Ótimo" },
-      { numero: 2, texto: "Ruim" }
-    ]
-  )
-
-  template = Template.create!(
+  Template.create!(
     adm: perf_adm,
     titulo: "Template #{rand(1000)}",
     utilizacoes_questoes_attributes: [
@@ -44,22 +58,53 @@ def criar_contexto_formulario_com_questoes(nome_turma)
       { questao_id: questao_objetiva.id, numero: 2 }
     ]
   )
+end
 
+def questoes_contexto_resposta
+  [
+    questao_discursiva_contexto_resposta,
+    questao_objetiva_contexto_resposta
+  ]
+end
+
+def questao_discursiva_contexto_resposta
+  Questao.create!(
+    enunciado: "Como você avalia a turma?",
+    tipo: :discursiva
+  )
+end
+
+def questao_objetiva_contexto_resposta
+  Questao.create!(
+    enunciado: "Qual nota você dá?",
+    tipo: :objetiva,
+    opcoes_attributes: [
+      { numero: 1, texto: "Ótimo" },
+      { numero: 2, texto: "Ruim" }
+    ]
+  )
+end
+
+def participacao_contexto_resposta(usuario, turma)
   PerfilDiscente.find_or_create_by!(usuario: usuario)
-  participacao = ParticipacaoTurma.find_or_create_by!(
+  ParticipacaoTurma.find_or_create_by!(
     usuario: usuario,
-    turma: @turma,
+    turma: turma,
     tipo_participacao: :discente
   )
+end
 
+def criar_formulario_contexto_resposta(template, perf_adm)
   @formulario = Formularios::CreateFromTemplate.call(
     template_id: template.id,
     turma_ids: [ @turma.id ],
     publico_alvo: :discentes,
     perfil_adm: perf_adm
   ).sole
+end
+
+def definir_questoes_contexto_resposta
   @questao_discursiva, @questao_objetiva = @formulario.questoes.order(:id).to_a
-  @avaliacao = @formulario.avaliacoes.find_by!(participacao_turma: participacao)
 end
 
 Dado('que estou na página de resposta do formulário da turma {string}') do |nome_turma|

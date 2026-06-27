@@ -40,183 +40,290 @@ class AuthController < ApplicationController
   end
 
   def login
-    if params[:identificador].blank? && params[:senha].blank?
-      return redirecionar_com_erro(root_path, "Informe sua matrícula ou e-mail e sua senha.")
-    end
-
-    return redirecionar_com_erro(root_path, "Informe sua matrícula ou e-mail.") if params[:identificador].blank?
-    return redirecionar_com_erro(root_path, "Informe sua senha.") if params[:senha].blank?
+    return redirecionar_erro_login if campos_login_invalidos?
 
     usuario = buscar_usuario_por_identificador(params[:identificador])
+    return redirecionar_login_invalido if usuario_invalido?(usuario)
+    return redirecionar_conta_inativa if conta_inativa?(usuario)
+    return redirecionar_login_sucesso(usuario) if senha_valida?(usuario)
 
-    if usuario.nil?
-      redirect_to root_path, flash: { error: "Matrícula ou e-mail inválido." }
-      return
-    end
-
-    unless usuario.ativo?
-      redirect_to root_path,
-        flash: { error: "Esta conta ainda não foi ativada. Por favor, realize o Primeiro Acesso." }
-      return
-    end
-
-    if usuario.authenticate_senha(params[:senha])
-      session[:usuario_id] = usuario.id
-      redirect_to avaliacoes_path, flash: { success: "Login realizado com sucesso! Seja bem-vindo." }
-    else
-      redirect_to root_path, flash: { error: "Senha incorreta." }
-    end
+    redirecionar_senha_incorreta
   end
 
   def processar_solicitacao_cadastro
-    unless email_valido?(params[:email])
-      return redirecionar_com_erro(cadastro_path, "Por favor, insira um formato de e-mail válido.")
-    end
+    return redirecionar_erro_email_cadastro_invalido unless email_valido?(params[:email])
 
     usuario = Usuario.find_by(matricula: params[:matricula])
-    return redirecionar_com_erro(cadastro_path, "Matrícula não encontrada no sistema institucional.") if usuario.nil?
+    return redirecionar_validacao_solicitacao_cadastro(usuario) if validacao_solicitacao_cadastro?(usuario)
 
-    if usuario.email.to_s.downcase.strip != params[:email].to_s.downcase.strip
-      return redirecionar_com_erro(
-        cadastro_path,
-        "O e-mail informado não corresponde ao e-mail institucional desta matrícula."
-      )
-    end
+    token_gerado = criar_token_cadastro(usuario)
+    return redirecionar_sucesso_email_cadastro if enviar_email_cadastro(usuario.email, token_gerado)
 
-    if usuario.ativo?
-      return redirecionar_com_erro(
-        cadastro_path,
-        "Esta matrícula já possui um cadastro ativo. Caso tenha esquecido sua senha, utilize a redefinição."
-      )
-    end
-
-    token_gerado = SecureRandom.hex(16)
-    usuario.tokens.create!(
-      value: token_gerado,
-      tipo: "cadastro",
-      expires_at: 10.minutes.from_now
-    )
-
-    if enviar_email_cadastro(usuario.email, token_gerado)
-      redirect_to root_path, flash: { success: mensagem_email_enviado("10 minutos") }
-    else
-      redirect_to cadastro_path,
-        flash: { error: "Houve um erro técnico ao tentar enviar o e-mail. Tente novamente mais tarde." }
-    end
+    redirecionar_erro_email_cadastro
   end
 
   def confirmar_cadastro
+    processar_confirmacao_senha("cadastro")
+  end
+
+  def processar_redefinicao_senha
+    processar_solicitacao_redefinicao_senha
+  end
+
+  def confirmar_redefinicao_senha
+    processar_confirmacao_senha("redefinicao")
+  end
+
+  private
+
+  def campos_login_invalidos?
+    params[:identificador].blank? || params[:senha].blank?
+  end
+
+  def redirecionar_erro_login
+    mensagem = if params[:identificador].blank? && params[:senha].blank?
+                 "Informe sua matrícula ou e-mail e sua senha."
+               elsif params[:identificador].blank?
+                 "Informe sua matrícula ou e-mail."
+               else
+                 "Informe sua senha."
+               end
+
+    redirecionar_com_erro(root_path, mensagem)
+  end
+
+  def usuario_invalido?(usuario)
+    usuario.nil?
+  end
+
+  def conta_inativa?(usuario)
+    !usuario.ativo?
+  end
+
+  def senha_valida?(usuario)
+    usuario.authenticate_senha(params[:senha])
+  end
+
+  def redirecionar_login_invalido
+    redirect_to root_path, flash: { error: "Matrícula ou e-mail inválido." }
+  end
+
+  def redirecionar_conta_inativa
+    redirect_to root_path,
+      flash: { error: "Esta conta ainda não foi ativada. Por favor, realize o Primeiro Acesso." }
+  end
+
+  def redirecionar_login_sucesso(usuario)
+    session[:usuario_id] = usuario.id
+    redirect_to avaliacoes_path, flash: { success: "Login realizado com sucesso! Seja bem-vindo." }
+  end
+
+  def redirecionar_senha_incorreta
+    redirect_to root_path, flash: { error: "Senha incorreta." }
+  end
+
+  def redirecionar_erro_email_cadastro_invalido
+    redirecionar_com_erro(cadastro_path, "Por favor, insira um formato de e-mail válido.")
+  end
+
+  def redirecionar_matricula_inexistente
+    redirecionar_com_erro(cadastro_path, "Matrícula não encontrada no sistema institucional.")
+  end
+
+  def redirecionar_email_institucional_incorreto
+    redirecionar_com_erro(
+      cadastro_path,
+      "O e-mail informado não corresponde ao e-mail institucional desta matrícula."
+    )
+  end
+
+  def redirecionar_matricula_ativa
+    redirecionar_com_erro(
+      cadastro_path,
+      "Esta matrícula já possui um cadastro ativo. Caso tenha esquecido sua senha, utilize a redefinição."
+    )
+  end
+
+  def validacao_solicitacao_cadastro?(usuario)
+    usuario_invalido?(usuario) || !email_corresponde_ao_institucional?(usuario) || !conta_inativa?(usuario)
+  end
+
+  def redirecionar_validacao_solicitacao_cadastro(usuario)
+    return redirecionar_matricula_inexistente if usuario_invalido?(usuario)
+    return redirecionar_email_institucional_incorreto unless email_corresponde_ao_institucional?(usuario)
+
+    redirecionar_matricula_ativa
+  end
+
+  def senha_confirmacao_valida?
+    return false if params[:senha].blank? || params[:senha_confirmacao].blank?
+    return false if params[:senha].length < TAMANHO_MINIMO_SENHA
+
+    params[:senha] == params[:senha_confirmacao]
+  end
+
+  def processar_confirmacao_senha(tipo_operacao)
+    return redirecionar_erro_confirmacao_senha(tipo_operacao) unless senha_confirmacao_valida?
+
+    token_registro = buscar_token_valido(params[:token], tipo_operacao)
+    return redirecionar_token_invalido(tipo_operacao) if token_registro.nil?
+
+    usuario = token_registro.usuario
+    preparar_usuario_para_confirmacao(usuario, tipo_operacao)
+    return concluir_confirmacao(usuario, token_registro, tipo_operacao) if usuario.save
+
+    redirecionar_erro_salvamento_confirmacao(usuario, tipo_operacao)
+  end
+
+  def processar_solicitacao_redefinicao_senha
+    return erro_solicitacao_redefinicao_senha unless email_valido?(params[:email])
+
+    usuario = Usuario.find_by(email: params[:email])
+    return erro_email_nao_cadastrado if usuario.nil?
+
+    token_gerado = criar_token_redefinicao(usuario)
+    return redirecionar_sucesso_redefinicao_senha if enviar_email_redefinicao(params[:email], token_gerado)
+
+    redirecionar_erro_redefinicao_senha
+  end
+
+  def preparar_usuario_para_confirmacao(usuario, tipo_operacao)
+    usuario.senha = params[:senha]
+    usuario.senha_confirmation = params[:senha_confirmacao]
+    return unless tipo_operacao == "cadastro"
+
+    usuario.status = :ativo
+  end
+
+  def concluir_confirmacao(usuario, token_registro, tipo_operacao)
+    token_registro.destroy
+    return redirect_to root_path, flash: { success: "Cadastro concluído com sucesso! Faça seu login." } if tipo_operacao == "cadastro"
+
+    redirect_to root_path,
+      flash: { success: "Sua senha foi alterada com sucesso! Insira suas novas credenciais para acessar." }
+  end
+
+  def redirecionar_erro_salvamento_confirmacao(usuario, tipo_operacao)
+    return redirect_to confirmar_cadastro_path(token: params[:token]),
+      flash: { error: usuario.errors.full_messages.to_sentence } if tipo_operacao == "cadastro"
+
+    redirect_to redefinir_senha_path(token: params[:token]),
+      flash: { error: usuario.errors.full_messages.to_sentence }
+  end
+
+  def redirecionar_erro_confirmacao_senha(tipo_operacao)
     if params[:senha].blank? || params[:senha_confirmacao].blank?
       return redirecionar_com_erro(
-        confirmar_cadastro_path(token: params[:token]),
+        caminho_confirmacao_senha(tipo_operacao),
         "Os campos de senha são obrigatórios."
       )
     end
 
     if params[:senha].length < TAMANHO_MINIMO_SENHA
       return redirecionar_com_erro(
-        confirmar_cadastro_path(token: params[:token]),
-        "A senha deve conter pelo menos #{TAMANHO_MINIMO_SENHA} caracteres."
+        caminho_confirmacao_senha(tipo_operacao),
+        mensagem_senha_curta(tipo_operacao)
       )
     end
 
-    if params[:senha] != params[:senha_confirmacao]
-      return redirecionar_com_erro(
-        confirmar_cadastro_path(token: params[:token]),
-        "As senhas não coincidem. Digite novamente."
-      )
-    end
-
-    token_registro = buscar_token_valido(params[:token], "cadastro")
-    if token_registro.nil?
-      return redirecionar_com_erro(
-        root_path,
-        "O link de confirmação é inválido, expirou ou não corresponde a esta operação."
-      )
-    end
-
-    usuario = token_registro.usuario
-    usuario.senha = params[:senha]
-    usuario.senha_confirmation = params[:senha_confirmacao]
-    usuario.status = :ativo
-
-    if usuario.save
-      token_registro.destroy
-      redirect_to root_path, flash: { success: "Cadastro concluído com sucesso! Faça seu login." }
-    else
-      redirect_to confirmar_cadastro_path(token: params[:token]),
-        flash: { error: usuario.errors.full_messages.to_sentence }
-    end
+    redirecionar_com_erro(
+      caminho_confirmacao_senha(tipo_operacao),
+      "As senhas não coincidem. Digite novamente."
+    )
   end
 
-  def processar_redefinicao_senha
-    unless email_valido?(params[:email])
-      return redirecionar_com_erro(solicitar_redef_senha_path, "Por favor, insira um formato de e-mail válido.")
-    end
+  def caminho_confirmacao_senha(tipo_operacao)
+    return redefinir_senha_path(token: params[:token]) if tipo_operacao == "redefinicao"
 
-    usuario = Usuario.find_by(email: params[:email])
-    return redirecionar_com_erro(solicitar_redef_senha_path, "Este e-mail não está cadastrado no sistema.") if usuario.nil?
+    confirmar_cadastro_path(token: params[:token])
+  end
 
+  def mensagem_senha_curta(tipo_operacao)
+    return "A nova senha deve conter pelo menos #{TAMANHO_MINIMO_SENHA} caracteres." if tipo_operacao == "redefinicao"
+
+    "A senha deve conter pelo menos #{TAMANHO_MINIMO_SENHA} caracteres."
+  end
+
+  def redirecionar_token_invalido(tipo_operacao)
+    mensagem = if tipo_operacao == "redefinicao"
+                 "O link de redefinição é inválido, expirou ou não corresponde a esta operação."
+               else
+                 "O link de confirmação é inválido, expirou ou não corresponde a esta operação."
+               end
+
+    redirecionar_com_erro(root_path, mensagem)
+  end
+
+  def concluir_cadastro(usuario, token_registro)
+    token_registro.destroy
+    redirect_to root_path, flash: { success: "Cadastro concluído com sucesso! Faça seu login." }
+  end
+
+  def redirecionar_erro_salvamento_cadastro(usuario)
+    redirect_to confirmar_cadastro_path(token: params[:token]),
+      flash: { error: usuario.errors.full_messages.to_sentence }
+  end
+
+  def criar_token_redefinicao(usuario)
     token_gerado = SecureRandom.hex(16)
     usuario.tokens.create!(
       value: token_gerado,
       tipo: "redefinicao",
       expires_at: 10.minutes.from_now
     )
-
-    if enviar_email_redefinicao(params[:email], token_gerado)
-      redirect_to root_path, flash: { success: mensagem_email_enviado("10 minutos") }
-    else
-      redirect_to solicitar_redef_senha_path,
-        flash: { error: "Houve um erro técnico ao tentar enviar o e-mail de recuperação. Tente novamente mais tarde." }
-    end
+    token_gerado
   end
 
-  def confirmar_redefinicao_senha
-    if params[:senha].blank? || params[:senha_confirmacao].blank?
-      return redirecionar_com_erro(
-        redefinir_senha_path(token: params[:token]),
-        "Os campos de senha são obrigatórios."
-      )
-    end
-
-    if params[:senha].length < TAMANHO_MINIMO_SENHA
-      return redirecionar_com_erro(
-        redefinir_senha_path(token: params[:token]),
-        "A nova senha deve conter pelo menos #{TAMANHO_MINIMO_SENHA} caracteres."
-      )
-    end
-
-    if params[:senha] != params[:senha_confirmacao]
-      return redirecionar_com_erro(
-        redefinir_senha_path(token: params[:token]),
-        "As senhas não coincidem. Digite novamente."
-      )
-    end
-
-    token_registro = buscar_token_valido(params[:token], "redefinicao")
-    if token_registro.nil?
-      return redirecionar_com_erro(
-        root_path,
-        "O link de redefinição é inválido, expirou ou não corresponde a esta operação."
-      )
-    end
-
-    usuario = token_registro.usuario
-    usuario.senha = params[:senha]
-    usuario.senha_confirmation = params[:senha_confirmacao]
-
-    if usuario.save
-      token_registro.destroy
-      redirect_to root_path,
-        flash: { success: "Sua senha foi alterada com sucesso! Insira suas novas credenciais para acessar." }
-    else
-      redirect_to redefinir_senha_path(token: params[:token]),
-        flash: { error: usuario.errors.full_messages.to_sentence }
-    end
+  def erro_solicitacao_redefinicao_senha
+    redirecionar_com_erro(solicitar_redef_senha_path, "Por favor, insira um formato de e-mail válido.")
   end
 
-  private
+  def erro_email_nao_cadastrado
+    redirecionar_com_erro(solicitar_redef_senha_path, "Este e-mail não está cadastrado no sistema.")
+  end
+
+  def redirecionar_sucesso_redefinicao_senha
+    redirect_to root_path, flash: { success: mensagem_email_enviado("10 minutos") }
+  end
+
+  def redirecionar_erro_redefinicao_senha
+    redirect_to solicitar_redef_senha_path,
+      flash: { error: "Houve um erro técnico ao tentar enviar o e-mail de recuperação. Tente novamente mais tarde." }
+  end
+
+  def concluir_redefinicao_senha(usuario, token_registro)
+    token_registro.destroy
+    redirect_to root_path,
+      flash: { success: "Sua senha foi alterada com sucesso! Insira suas novas credenciais para acessar." }
+  end
+
+  def redirecionar_erro_salvamento_redefinicao(usuario)
+    redirect_to redefinir_senha_path(token: params[:token]),
+      flash: { error: usuario.errors.full_messages.to_sentence }
+  end
+
+  def email_corresponde_ao_institucional?(usuario)
+    usuario.email.to_s.downcase.strip == params[:email].to_s.downcase.strip
+  end
+
+  def criar_token_cadastro(usuario)
+    token_gerado = SecureRandom.hex(16)
+    usuario.tokens.create!(
+      value: token_gerado,
+      tipo: "cadastro",
+      expires_at: 10.minutes.from_now
+    )
+    token_gerado
+  end
+
+  def redirecionar_sucesso_email_cadastro
+    redirect_to root_path, flash: { success: mensagem_email_enviado("10 minutos") }
+  end
+
+  def redirecionar_erro_email_cadastro
+    redirect_to cadastro_path,
+      flash: { error: "Houve um erro técnico ao tentar enviar o e-mail. Tente novamente mais tarde." }
+  end
 
   def impedir_se_logado
     return unless current_user.present?

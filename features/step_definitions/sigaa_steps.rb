@@ -6,70 +6,117 @@ end
 
 def dados_sigaa_do_cenario
   departamento_id = adm_atual.departamento_id
-  turmas = estado[:sigaa][:turmas].uniq { |turma| turma[:codigo] }
-
-  participantes = estado[:sigaa][:participantes].dup
-  estado[:sigaa][:atualizacoes].each do |matricula, alteracoes|
-    next if participantes.any? { |participante| participante[:matricula] == matricula }
-
-    usuario = Usuario.find_by!(matricula: matricula)
-    participantes << {
-      nome: alteracoes[:nome] || usuario.nome,
-      matricula: matricula,
-      email: alteracoes[:email] || usuario.email
-    }
-  end
+  turmas = turmas_sigaa_do_cenario
+  participantes = participantes_sigaa_do_cenario
 
   {
-    "materias" => turmas.map do |turma|
-      {
-        "codigo" => turma[:codigo],
-        "nome" => turma[:nome],
-        "departamento_id_temp" => departamento_id
-      }
-    end,
-    "turmas" => turmas.map do |turma|
-      {
-        "numero" => 1,
-        "ano" => Date.current.year,
-        "semestre" => Turma.semestres.fetch(Turma.semestre_atual),
-        "materia_codigo" => turma[:codigo]
-      }
-    end,
+    "materias" => materias_sigaa_do_cenario(turmas, departamento_id),
+    "turmas" => classes_sigaa_do_cenario(turmas),
     "usuarios_docentes" => [],
-    "usuarios_discentes" => participantes.map do |participante|
-      turma = turmas.find { |item| item[:codigo] == participante[:codigo] } || turmas.first
-      matriculas = if turma
-        [ { "materia_codigo" => turma[:codigo], "numero_turma" => 1 } ]
-      else
-        []
-      end
-
-      {
-        "matricula" => participante[:matricula],
-        "nome" => participante[:nome],
-        "email" => participante[:email],
-        "turmas_matriculadas" => matriculas
-      }
-    end
+    "usuarios_discentes" => discentes_sigaa_do_cenario(participantes, turmas)
   }
 end
 
+def turmas_sigaa_do_cenario
+  estado[:sigaa][:turmas].uniq { |turma| turma[:codigo] }
+end
+
+def participantes_sigaa_do_cenario
+  participantes = estado[:sigaa][:participantes].dup
+  estado[:sigaa][:atualizacoes].each do |matricula, alteracoes|
+    adicionar_participante_atualizado_sigaa(participantes, matricula, alteracoes)
+  end
+  participantes
+end
+
+def adicionar_participante_atualizado_sigaa(participantes, matricula, alteracoes)
+  return if participantes.any? { |participante| participante[:matricula] == matricula }
+
+  usuario = Usuario.find_by!(matricula: matricula)
+  participantes << {
+    nome: alteracoes[:nome] || usuario.nome,
+    matricula: matricula,
+    email: alteracoes[:email] || usuario.email
+  }
+end
+
+def materias_sigaa_do_cenario(turmas, departamento_id)
+  turmas.map do |turma|
+    {
+      "codigo" => turma[:codigo],
+      "nome" => turma[:nome],
+      "departamento_id_temp" => departamento_id
+    }
+  end
+end
+
+def classes_sigaa_do_cenario(turmas)
+  turmas.map do |turma|
+    {
+      "numero" => 1,
+      "ano" => Date.current.year,
+      "semestre" => Turma.semestres.fetch(Turma.semestre_atual),
+      "materia_codigo" => turma[:codigo]
+    }
+  end
+end
+
+def discentes_sigaa_do_cenario(participantes, turmas)
+  participantes.map do |participante|
+    discente_sigaa_do_cenario(participante, turmas)
+  end
+end
+
+def discente_sigaa_do_cenario(participante, turmas)
+  {
+    "matricula" => participante[:matricula],
+    "nome" => participante[:nome],
+    "email" => participante[:email],
+    "turmas_matriculadas" => matriculas_sigaa_do_participante(participante, turmas)
+  }
+end
+
+def matriculas_sigaa_do_participante(participante, turmas)
+  turma = turmas.find { |item| item[:codigo] == participante[:codigo] } || turmas.first
+  return [] unless turma
+
+  [ { "materia_codigo" => turma[:codigo], "numero_turma" => 1 } ]
+end
+
 def preparar_fonte_sigaa
+  preparar_stubs_base_sigaa
+  preparar_leitura_sigaa
+end
+
+def preparar_stubs_base_sigaa
   allow(File).to receive(:exist?).and_call_original
   allow(File).to receive(:exist?).with(caminho_arquivo_sigaa).and_return(true)
   allow(File).to receive(:read).and_call_original
+end
 
+def preparar_leitura_sigaa
   case estado[:sigaa][:erro]
   when :json_invalido
-    allow(File).to receive(:read).with(caminho_arquivo_sigaa).and_return("{invalido")
+    preparar_json_invalido_sigaa
   when :indisponivel
-    allow(File).to receive(:read).with(caminho_arquivo_sigaa).and_raise(Errno::EIO)
+    preparar_sigaa_indisponivel
   else
-    allow(File).to receive(:read)
-      .with(caminho_arquivo_sigaa)
-      .and_return(JSON.generate(dados_sigaa_do_cenario))
+    preparar_json_valido_sigaa
   end
+end
+
+def preparar_json_invalido_sigaa
+  allow(File).to receive(:read).with(caminho_arquivo_sigaa).and_return("{invalido")
+end
+
+def preparar_sigaa_indisponivel
+  allow(File).to receive(:read).with(caminho_arquivo_sigaa).and_raise(Errno::EIO)
+end
+
+def preparar_json_valido_sigaa
+  allow(File).to receive(:read)
+    .with(caminho_arquivo_sigaa)
+    .and_return(JSON.generate(dados_sigaa_do_cenario))
 end
 
 Given(/^que o sistema não possui nenhuma turma cadastrada$/) do

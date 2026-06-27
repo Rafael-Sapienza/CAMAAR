@@ -30,24 +30,7 @@ module TestBuilders
     adm ||= create_admin_usuario.perfil_adm
     template = Template.new(titulo: titulo, descricao: "Descrição de teste", adm: adm, criado_em: Time.current)
 
-    (questoes || default_questoes).each_with_index do |questao_attrs, index|
-      attrs = questao_attrs.dup
-      opcoes = attrs.delete(:opcoes)
-      numero = attrs.delete(:numero) || attrs.delete(:posicao) || (index + 1)
-      attrs.delete(:obrigatoria)
-
-      questao = Questao.new(attrs)
-
-      if opcoes.present?
-        Array(opcoes).each_with_index do |texto, opcao_index|
-          questao.opcoes.build(numero: opcao_index + 1, texto: texto)
-        end
-      end
-
-      questao.save!
-
-      template.utilizacoes_questoes.build(questao: questao, numero: numero)
-    end
+    build_template_questoes(template, questoes || default_questoes)
 
     template.save!
     template.utilizacoes_questoes.each(&:save!)
@@ -115,6 +98,38 @@ module TestBuilders
   end
 
   private
+
+  def build_template_questoes(template, questoes)
+    questoes.each_with_index do |questao_attrs, index|
+      questao, numero = build_template_questao(questao_attrs, index)
+      template.utilizacoes_questoes.build(questao: questao, numero: numero)
+    end
+  end
+
+  def build_template_questao(questao_attrs, index)
+    attrs = questao_attrs.dup
+    opcoes = attrs.delete(:opcoes)
+    numero = questao_numero(attrs, index)
+    attrs.delete(:obrigatoria)
+
+    questao = Questao.new(attrs)
+    build_questao_opcoes(questao, opcoes)
+    questao.save!
+
+    [ questao, numero ]
+  end
+
+  def questao_numero(attrs, index)
+    attrs.delete(:numero) || attrs.delete(:posicao) || (index + 1)
+  end
+
+  def build_questao_opcoes(questao, opcoes)
+    return unless opcoes.present?
+
+    Array(opcoes).each_with_index do |texto, opcao_index|
+      questao.opcoes.build(numero: opcao_index + 1, texto: texto)
+    end
+  end
 
   def default_questoes
     [
