@@ -3,39 +3,10 @@
 module BrevoEmailable
   extend ActiveSupport::Concern
 
-  BREVO_API_URL = URI("https://api.brevo.com/v3/smtp/email")
   REMETENTE = { "name" => "CAMAAR Support", "email" => "rafaelsapienzapinheiro@gmail.com" }.freeze
 
   def chamar_api_brevo(payload, contexto: "")
-    api_key = Rails.application.credentials.dig(:brevo, :api_key)
-    unless api_key.present?
-      Rails.logger.error "[BREVO] #{contexto} — Token de API não configurado."
-      return false
-    end
-
-    headers = {
-      "Accept" => "application/json",
-      "api-key" => api_key,
-      "Content-Type" => "application/json"
-    }
-
-    http = Net::HTTP.new(BREVO_API_URL.host, BREVO_API_URL.port)
-    http.use_ssl = true
-    request = Net::HTTP::Post.new(BREVO_API_URL.path, headers)
-    request.body = payload.to_json
-
-    response = http.request(request)
-
-    if response.is_a?(Net::HTTPSuccess)
-      Rails.logger.info "[BREVO] #{contexto} — E-mail enviado com sucesso."
-      true
-    else
-      Rails.logger.error "[BREVO] #{contexto} — Falha. Código: #{response.code} | Resposta: #{response.body}"
-      false
-    end
-  rescue StandardError => e
-    Rails.logger.error "[BREVO] #{contexto} — Erro inesperado: #{e.message}"
-    false
+    Brevo::Client.enviar(payload, contexto:)
   end
 
   def enviar_email_cadastro(destinatario, token)
@@ -137,13 +108,5 @@ module BrevoEmailable
       HTML
     }
     chamar_api_brevo(payload, contexto: "Convite do Administrador")
-  end
-
-  private
-
-  def brevo_api_key
-    ENV["BREVO_API_KEY"].presence || Rails.application.credentials.dig(:brevo, :api_key)
-  rescue ActiveSupport::MessageEncryptor::InvalidMessage, ActiveSupport::MessageVerifier::InvalidSignature
-    nil
   end
 end

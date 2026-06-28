@@ -120,21 +120,26 @@ class TemplatesController < ApplicationController
   end
 
   def preparar_reordenacao_de_opcoes(utilizacoes_attributes)
-    opcao_ids = utilizacoes_attributes.flat_map do |utilizacao_attributes|
-      questao_attributes = utilizacao_attributes[:questao_attributes] ||
-        utilizacao_attributes["questao_attributes"]
-      opcoes_attributes = nested_attributes_values(
-        questao_attributes&.dig(:opcoes_attributes) ||
-          questao_attributes&.dig("opcoes_attributes")
-      )
+    opcao_ids = utilizacoes_attributes.flat_map { |attrs| opcao_ids_da_questao(attrs) }
+    aplicar_reordenacao_negativa(Opcao.where(id: opcao_ids))
+  end
 
-      opcoes_attributes
-        .reject { |attributes| destroy_attribute?(attributes) }
-        .filter_map { |attributes| persisted_id_with_number(attributes) }
-    end
+  def opcao_ids_da_questao(utilizacao_attributes)
+    questao_attributes = utilizacao_attributes[:questao_attributes] ||
+      utilizacao_attributes["questao_attributes"]
+    opcoes_attributes = nested_attributes_values(
+      questao_attributes&.dig(:opcoes_attributes) ||
+        questao_attributes&.dig("opcoes_attributes")
+    )
 
-    Opcao.where(id: opcao_ids).find_each.with_index(1) do |opcao, index|
-      opcao.update_columns(numero: -index)
+    opcoes_attributes
+      .reject { |attributes| destroy_attribute?(attributes) }
+      .filter_map { |attributes| persisted_id_with_number(attributes) }
+  end
+
+  def aplicar_reordenacao_negativa(registros)
+    registros.find_each.with_index(1) do |registro, index|
+      registro.update_columns(numero: -index)
     end
   end
 

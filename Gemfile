@@ -64,6 +64,8 @@ group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]
   gem "web-console"
   gem "rubycritic", require: false
+  gem "saikuro", require: false # Complexidade ciclomática por método
+  gem "getoptlong", require: false # Dependência do Saikuro no Ruby 3.4+
   gem "rdoc", require: false
   gem "erb_lint", require: false
 end

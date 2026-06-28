@@ -166,6 +166,44 @@ RSpec.describe "Formularios", type: :request do
     end
   end
 
+  describe "GET /formularios/:id/exportar_csv" do
+    it "exporta respostas salvas após submissão da avaliação" do
+      discente = create_usuario(nome: "João Respondedor")
+      participacao = create_participacao(
+        usuario: discente,
+        turma: turma_a,
+        tipo_participacao: :discente
+      )
+      formulario = Formularios::CreateFromTemplate.call(
+        template_id: template.id,
+        turma_ids: [ turma_a.id ],
+        publico_alvo: :discentes,
+        perfil_adm: admin.perfil_adm
+      ).sole
+      avaliacao = formulario.avaliacoes.find_by!(participacao_turma: participacao)
+      questao_discursiva = formulario.questoes.discursivas.sole
+      questao_objetiva = formulario.questoes.objetivas.sole
+      opcao = questao_objetiva.opcoes.first
+
+      sign_in_as(discente)
+      post submeter_avaliacao_path(avaliacao), params: {
+        respostas: {
+          questao_discursiva.id.to_s => { texto: "Ótima aula!" },
+          questao_objetiva.id.to_s => { opcao_id: opcao.id }
+        }
+      }
+
+      sign_in_as(admin)
+      get exportar_csv_formulario_path(formulario)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.content_type).to include("text/csv")
+      expect(response.body).to include("João Respondedor")
+      expect(response.body).to include("Ótima aula!")
+      expect(response.body).to include(opcao.texto)
+    end
+  end
+
   describe "GET /formularios/new" do
     it "pré-seleciona o template recebido pela URL" do
       sign_in_as(admin)

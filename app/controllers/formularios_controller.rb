@@ -33,7 +33,22 @@ class FormulariosController < ApplicationController
 
   def create
     authorize! Formulario.new(adm: current_administrador)
+    executar_criacao
+  rescue Formularios::Error, ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound => e
+    render_erro_criacao(e)
+  end
 
+  def exportar_csv
+    authorize! @formulario
+
+    send_data montar_csv(@formulario),
+      filename: nome_arquivo_csv(@formulario),
+      type: "text/csv; charset=utf-8"
+  end
+
+  private
+
+  def executar_criacao
     Formularios::CreateFromTemplate.call(
       template_id: params[:template_id],
       turma_ids: params[:turma_ids],
@@ -43,38 +58,38 @@ class FormulariosController < ApplicationController
 
     redirect_to formularios_path,
       notice: "Formulário criado com sucesso para as turmas selecionadas"
-  rescue Formularios::Error, ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound => e
+  end
+
+  def render_erro_criacao(erro)
     carregar_opcoes_de_selecao
-    flash[:alert] = e.is_a?(ActiveRecord::RecordNotFound) ? "Template ou turma não encontrados" : e.message
+    flash[:alert] = erro.is_a?(ActiveRecord::RecordNotFound) ? "Template ou turma não encontrados" : erro.message
     render :new, status: :unprocessable_content
   end
 
-  def exportar_csv
-    authorize! @formulario
+  def montar_csv(formulario)
+    questoes = formulario.questoes.order(:id)
 
-    avaliacoes = @formulario.avaliacoes
-      .joins(:respostas)
-      .distinct
+    CSV.generate(headers: true, col_sep: ";") do |csv|
+      csv << [ "Aluno", "Matrícula", *questoes.map(&:enunciado) ]
+
+      avaliacoes_com_respostas(formulario).each do |avaliacao|
+        csv << linha_csv(avaliacao, questoes)
+      end
+    end
+  end
+
+  def avaliacoes_com_respostas(formulario)
+    formulario.avaliacoes
+      .respondidas
       .includes(
         participacao_turma: :usuario,
         respostas: [ :questao, :texto, { opcoes_escolhidas: :opcao } ]
       )
-
-    questoes = @formulario.questoes.order(:id)
-    csv_data = CSV.generate(headers: true, col_sep: ";") do |csv|
-      csv << [ "Aluno", "Matrícula", *questoes.map(&:enunciado) ]
-
-      avaliacoes.each do |avaliacao|
-        csv << linha_csv(avaliacao, questoes)
-      end
-    end
-
-    send_data csv_data,
-      filename: "resultados_turma_#{@formulario.turma.materia.codigo}_#{Date.current}.csv",
-      type: "text/csv; charset=utf-8"
   end
 
-  private
+  def nome_arquivo_csv(formulario)
+    "resultados_turma_#{formulario.turma.materia.codigo}_#{Date.current}.csv"
+  end
 
   def carregar_opcoes_de_selecao
     templates = Template.includes(adm: :usuario).recentes

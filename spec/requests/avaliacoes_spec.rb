@@ -121,6 +121,74 @@ RSpec.describe "Avaliacoes", type: :request do
   end
 
   describe "POST /avaliacoes/:id/submeter" do
+    it "salva respostas discursivas e objetivas e marca avaliacao como respondida" do
+      participante = create_usuario(nome: "Discente")
+      participacao = create_participacao(
+        usuario: participante,
+        turma: turma,
+        tipo_participacao: :discente
+      )
+      formulario = Formularios::CreateFromTemplate.call(
+        template_id: template.id,
+        turma_ids: [ turma.id ],
+        publico_alvo: :discentes,
+        perfil_adm: admin.perfil_adm
+      ).sole
+      avaliacao = formulario.avaliacoes.find_by!(participacao_turma: participacao)
+      questao_discursiva = formulario.questoes.discursivas.sole
+      questao_objetiva = formulario.questoes.objetivas.sole
+      opcao = questao_objetiva.opcoes.first
+
+      sign_in_as(participante)
+
+      expect do
+        post submeter_avaliacao_path(avaliacao), params: {
+          respostas: {
+            questao_discursiva.id.to_s => { texto: "Boa disciplina" },
+            questao_objetiva.id.to_s => { opcao_id: opcao.id }
+          }
+        }
+      end.to change(Resposta, :count).by(2)
+        .and change(Texto, :count).by(1)
+        .and change(OpcaoEscolhida, :count).by(1)
+
+      expect(response).to redirect_to(avaliacoes_pendentes_path)
+      expect(avaliacao.reload).to be_respondida
+    end
+
+    it "salva respostas enviadas como campos HTML do formulário" do
+      participante = create_usuario(nome: "Discente HTML")
+      participacao = create_participacao(
+        usuario: participante,
+        turma: turma,
+        tipo_participacao: :discente
+      )
+      formulario = Formularios::CreateFromTemplate.call(
+        template_id: template.id,
+        turma_ids: [ turma.id ],
+        publico_alvo: :discentes,
+        perfil_adm: admin.perfil_adm
+      ).sole
+      avaliacao = formulario.avaliacoes.find_by!(participacao_turma: participacao)
+      questao_discursiva = formulario.questoes.discursivas.sole
+      questao_objetiva = formulario.questoes.objetivas.sole
+      opcao = questao_objetiva.opcoes.first
+
+      sign_in_as(participante)
+
+      post submeter_avaliacao_path(avaliacao),
+        params: {
+          "respostas" => {
+            questao_discursiva.id.to_s => { "texto" => "Boa disciplina" },
+            questao_objetiva.id.to_s => { "opcao_id" => opcao.id.to_s }
+          }
+        }
+
+      expect(response).to redirect_to(avaliacoes_pendentes_path)
+      expect(avaliacao.reload).to be_respondida
+      expect(avaliacao.respostas.count).to eq(2)
+    end
+
     it "rejeita opção pertencente a outra questão" do
       participante = create_usuario
       participacao = create_participacao(

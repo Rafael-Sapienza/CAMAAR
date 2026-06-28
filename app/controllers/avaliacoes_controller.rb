@@ -36,8 +36,11 @@ class AvaliacoesController < ApplicationController
     @formulario = @avaliacao.formulario
     @questoes   = questoes_do_formulario
 
-    if todas_obrigatorias_preenchidas?
-      salvar_respostas_e_finalizar
+    if respostas_completas?
+      finalizar_avaliacao
+    elsif @questoes.empty?
+      flash.now[:alert] = "Este formulário não possui questões para responder."
+      render :responder, status: :unprocessable_content
     else
       flash.now[:alert] = "Todas as questões obrigatórias devem ser preenchidas."
       render :responder, status: :unprocessable_content
@@ -61,45 +64,20 @@ class AvaliacoesController < ApplicationController
     @formulario.questoes.includes(:opcoes).order(:id)
   end
 
-  def todas_obrigatorias_preenchidas?
-    respostas_params = params[:respostas] || {}
-
-    @questoes.all? do |questao|
-      resposta = respostas_params[questao.id.to_s] || {}
-
-      if questao.discursiva?
-        resposta["texto"].to_s.strip.present?
-      else
-        Array(resposta["opcao_id"]).any?(&:present?)
-      end
-    end
+  def respostas_completas?
+    Avaliacoes::SalvarRespostas.todas_obrigatorias_preenchidas?(@questoes, params[:respostas])
   end
 
-  def salvar_respostas_e_finalizar
-    ActiveRecord::Base.transaction do
-      respostas_params = params[:respostas] || {}
-
-      @questoes.each do |questao|
-        resposta_data = respostas_params[questao.id.to_s] || {}
-        resposta = Resposta.find_or_initialize_by(avaliacao: @avaliacao, questao: questao)
-
-        if questao.discursiva?
-          resposta.build_texto(texto: resposta_data["texto"].to_s.strip)
-        else
-          opcao_id = resposta_data["opcao_id"].to_s
-          opcao    = questao.opcoes.find(opcao_id)
-          resposta.opcoes_escolhidas.build(opcao: opcao)
-        end
-
-        resposta.save!
-      end
-
-      @avaliacao.marcar_como_respondida!
-    end
+  def finalizar_avaliacao
+    Avaliacoes::SalvarRespostas.call(
+      avaliacao: @avaliacao,
+      questoes: @questoes,
+      respostas_params: params[:respostas]
+    )
 
     redirect_to avaliacoes_pendentes_path,
       notice: "Avaliação registrada com sucesso."
-  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound => e
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound
     flash.now[:alert] = "Todas as questões obrigatórias devem ser preenchidas."
     render :responder, status: :unprocessable_content
   end
