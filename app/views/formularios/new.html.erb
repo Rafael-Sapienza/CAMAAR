@@ -1,7 +1,7 @@
 <main class="app-page template-page">
-  <header class="template-page__header" style="flex-direction: column; align-items: flex-start; gap: 0.5rem;">
+  <header class="app-page__header">
     <h1>Criar Formulário</h1>
-    <p class="template-show__description">Escolha um template, filtre e selecione as turmas que receberão a avaliação.</p>
+    <p>Escolha um template, filtre e selecione as turmas que receberão a avaliação.</p>
   </header>
 
   <%= render "form", 
@@ -10,5 +10,6 @@
              template_selecionado: @template_selecionado,
              materias: @materias, 
              materia_selecionada: @materia_selecionada, 
-             turmas: @turmas %>
+             turmas: @turmas,
+             professores: @professores %>
 </main>

@@ -113,28 +113,41 @@ class FormulariosController < ApplicationController
     @materias = materias_do_departamento
     @materia_selecionada = params[:materia_id].presence
 
-    @turmas = turmas_do_departamento(materia_id: @materia_selecionada)
+    @turmas = turmas_do_departamento
+    @professores = professores_do_departamento
   end
 
   def materias_do_departamento
     Materia.do_departamento(current_administrador.departamento).order(:nome)
   end
 
-  def turmas_do_departamento(materia_id: nil)
-    escopo = Turma
+  def turmas_do_departamento
+    Turma
       .do_departamento(current_administrador.departamento)
       .do_semestre_atual
-      .includes(:materia)
+      .includes(:materia, participacoes_turma: :usuario)
       .order("materias.nome", :numero)
+  end
 
-    escopo = escopo.where(materia_id: materia_id) if materia_id.present?
-    escopo
+  def professores_do_departamento
+    current_administrador
+      .departamento
+      .docentes
+      .order(:nome)
   end
 
   def set_formulario
     @formulario = Formulario
       .do_departamento(current_administrador.departamento)
       .find(params[:id])
+  rescue ActiveRecord::RecordNotFound
+    redirect_to formularios_path, alert: mensagem_formulario_indisponivel
+  end
+
+  def mensagem_formulario_indisponivel
+    return "Você não tem permissão para exportar os resultados desse formulário." if action_name == "exportar_csv"
+
+    "Você não tem permissão para acessar esse formulário."
   end
 
   def authorize_formulario!

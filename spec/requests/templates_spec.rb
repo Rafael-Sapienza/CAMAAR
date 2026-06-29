@@ -209,7 +209,7 @@ RSpec.describe "Templates", type: :request do
 
       pagina = Nokogiri::HTML(response.body)
       botao = pagina.at_css(
-        ".template-page__header .app-button--accent"
+        ".app-page__header .app-button--accent"
       )
 
       expect(botao.text.strip).to eq("Usar em Formulário")

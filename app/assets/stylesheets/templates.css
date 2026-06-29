@@ -1,39 +1,11 @@
 /* Template listing, editor, nested questions, and options. */
 
-.template-page__header {
-  align-items: flex-start;
-  display: flex;
-  gap: 20px;
-  justify-content: space-between;
-  margin-bottom: 30px;
-}
-
 .template-show__description {
   margin-top: 0.5rem;
   max-width: 48rem;
   color: #6b7280;
   font-size: 0.95rem;
   line-height: 1.5;
-}
-
-.template-page__header h1 {
-  color: var(--camaar-ink);
-  font-size: clamp(28px, 4vw, 42px);
-  letter-spacing: -0.035em;
-  margin: 0;
-  overflow-wrap: anywhere;
-  position: relative;
-}
-
-.template-page__header h1::after {
-  background: linear-gradient(90deg, var(--camaar-brand), var(--camaar-accent));
-  border-radius: 999px;
-  bottom: -12px;
-  content: "";
-  height: 4px;
-  left: 0;
-  position: absolute;
-  width: 64px;
 }
 
 .template-page h2,
@@ -46,6 +18,13 @@
   font-size: clamp(20px, 2.5vw, 26px);
   letter-spacing: -0.02em;
   margin: 0 0 18px;
+}
+
+.template-section__subtitle {
+  color: var(--camaar-muted);
+  font-size: 0.95rem;
+  line-height: 1.45;
+  margin: -10px 0 18px;
 }
 
 .template-page>hr,
@@ -506,15 +485,6 @@
 }
 
 @media (max-width: 640px) {
-  .template-page__header {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .template-page__header .app-button {
-    align-self: flex-start;
-  }
-
   .template-section {
     border-radius: 14px;
   }

@@ -26,17 +26,9 @@
   </section>
 
   <%= form_with url: formularios_path, class: "app-panel app-form" do |form| %>
-    <fieldset class="app-field">
-      <legend>Público-alvo</legend>
-      <div class="choice-list">
-        <% Formulario.publico_alvos.each do |valor, _| %>
-          <label class="choice-card">
-            <%= radio_button_tag :publico_alvo, valor, false, id: "publico_alvo_#{valor}" %>
-            <span><%= valor == "docentes" ? "Docentes" : "Discentes" %></span>
-          </label>
-        <% end %>
-      </div>
-    </fieldset>
+    <div class="app-field formulario-builder__field--compact">
+      <%= render "publico_alvo_select", menu_id: "publicar-publico-alvo-menu" %>
+    </div>
 
     <div class="app-actions">
       <%= form.submit "Confirmar Publicação", class: "app-button app-button--accent" %>

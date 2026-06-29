@@ -28,6 +28,20 @@ Funcionalidade: Escolher público-alvo do formulário
     E clico em "Publicar formulário"
     Então o formulário deve ficar disponível apenas para os professores vinculados à turma "Estrutura de Dados - Turma C"
 
+  @happy
+  Cenário: Criar formulários distintos para docentes e discentes na mesma turma
+    Dado que estou na página de criação de formulários
+    Quando eu seleciono o template "Avaliação Geral de Disciplina"
+    E seleciono a turma "Estrutura de Dados - Turma C"
+    E eu seleciono a opção de público-alvo como "Docentes"
+    E clico em "Publicar formulário"
+    E volto para a página de criação de formulários
+    Quando eu seleciono o template "Avaliação Geral de Disciplina"
+    E seleciono a turma "Estrutura de Dados - Turma C"
+    E eu seleciono a opção de público-alvo como "Discentes"
+    E clico em "Publicar formulário"
+    Então devem existir formulários para "Docentes" e "Discentes" na turma "Estrutura de Dados - Turma C"
+
   @sad
   Cenário: Tentar avançar sem definir o público-alvo do formulário
     Dado que estou na página de criação de formulários

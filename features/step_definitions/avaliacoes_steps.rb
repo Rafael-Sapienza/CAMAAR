@@ -1,21 +1,21 @@
 # frozen_string_literal: true
 
-Quando("eu acesso a página de avaliações pendentes") do
+When("eu acesso a página de avaliações pendentes") do
   visit avaliacoes_pendentes_path
 end
 
-Então("devo ver o formulário da turma {string} na lista") do |nome_turma|
+Then("devo ver o formulário da turma {string} na lista") do |nome_turma|
   expect(page).to have_content(nome_turma)
 end
 
-Então("o status do formulário deve ser {string}") do |status|
+Then("o status do formulário deve ser {string}") do |status|
   expect(page).to have_content(status)
 end
 
-Então("devo ver uma mensagem informando que nenhum formulário pendente foi encontrado") do
+Then("devo ver uma mensagem informando que nenhum formulário pendente foi encontrado") do
   expect(page).to have_content("Nenhum formulário pendente foi encontrado.")
 end
 
-Então("não devo ver o formulário da turma {string} na lista") do |nome_turma|
+Then("não devo ver o formulário da turma {string} na lista") do |nome_turma|
   expect(page).not_to have_content(nome_turma)
 end

@@ -22,19 +22,50 @@
 }
 
 .app-page__header {
-  margin-bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 30px;
 }
 
 .app-page__header h1 {
   color: var(--camaar-ink);
   font-size: clamp(28px, 4vw, 42px);
   letter-spacing: -0.035em;
-  margin: 0 0 10px;
+  margin: 0;
+  overflow-wrap: anywhere;
+  padding-bottom: 14px;
+  position: relative;
+}
+
+.app-page__header h1::after {
+  background: linear-gradient(90deg, var(--camaar-brand), var(--camaar-accent));
+  border-radius: 999px;
+  bottom: 0;
+  content: "";
+  height: 4px;
+  left: 0;
+  position: absolute;
+  width: 64px;
 }
 
 .app-page__header p {
   color: var(--camaar-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
   margin: 0;
+  max-width: 48rem;
+}
+
+.app-page__header .app-button {
+  align-self: flex-start;
+}
+
+.app-page__header--split {
+  align-items: flex-start;
+  flex-direction: row;
+  gap: 20px;
+  justify-content: space-between;
 }
 
 .app-panel {
@@ -776,6 +807,14 @@ fieldset.app-field {
 
   .app-button {
     width: 100%;
+  }
+
+  .app-page__header--split {
+    flex-direction: column;
+  }
+
+  .app-page__header .app-button {
+    width: auto;
   }
 }
 

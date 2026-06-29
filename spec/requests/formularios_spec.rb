@@ -178,6 +178,84 @@ RSpec.describe "Formularios", type: :request do
       expect(response).to have_http_status(:ok)
       expect(template_selecionado["value"]).to eq(template.id.to_s)
       expect(template_selecionado.ancestors("label").first.text).to include(template.titulo)
+      expect(template_selecionado.ancestors(".formulario-section-box").first.text).to include("Template base")
+      expect(template_selecionado.ancestors(".formulario-step--template")).not_to be_empty
+      expect(template_selecionado["type"]).to eq("radio")
+    end
+
+    it "lista turmas em uma caixa única e usa matéria apenas como filtro inicial" do
+      turma_a
+      turma_b
+      professor = create_usuario(nome: "Professora Ada", email: "ada@example.com")
+      create_participacao(usuario: professor, turma: turma_a, tipo_participacao: :docente)
+      sign_in_as(admin)
+
+      get new_formulario_path(materia_id: turma_a.materia_id)
+
+      pagina = Nokogiri::HTML(response.body)
+      filtro = pagina.at_css("[data-controller='class-filter']")
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(turma_a.nome_exibicao)
+      expect(response.body).to include(turma_b.nome_exibicao)
+      expect(pagina.css(".formulario-class-group")).to be_empty
+      expect(pagina.css(".formulario-classes__box .formulario-choice-card--class").size).to eq(2)
+      expect(filtro["data-class-filter-selected-materia-ids-value"]).to eq(turma_a.materia_id.to_s)
+      expect(pagina.at_css("#turma_#{turma_a.id}").ancestors("label").first["data-professor-ids"]).to include(professor.id.to_s)
+      expect(response.body).to include("Professora Ada")
+    end
+
+    it "renderiza menu de filtro com seções recolhíveis e buscas específicas" do
+      professor = create_usuario(nome: "Professor Alan", email: "alan@example.com")
+      professor_do_departamento = create_usuario(nome: "Professor Sem Turma", email: "sem-turma@example.com")
+      create_participacao(usuario: professor, turma: turma_a, tipo_participacao: :docente)
+      create_perfil_docente(professor_do_departamento, departamento: departamento)
+      sign_in_as(admin)
+
+      get new_formulario_path
+
+      pagina = Nokogiri::HTML(response.body)
+      menu = pagina.at_css("#formulario-class-filter-menu")
+      caixa_turmas = pagina.at_css(".formulario-classes__box")
+      cabecalho_caixa = pagina.at_css(".formulario-classes__box-header")
+
+      expect(response).to have_http_status(:ok)
+      expect(pagina.at_css(".formulario-form-panel")).to be_present
+      expect(pagina.css(".formulario-step__marker").map(&:text)).to eq(%w[1 2])
+      expect(pagina.css(".template-form__metadata")).to be_empty
+      expect(response.body).not_to include("Dados do formulário")
+      expect(pagina.css(".formulario-section-box__heading label").map(&:text)).to include(
+        "Template base",
+        "Selecione as turmas alvo"
+      )
+      expect(pagina.at_css(".formulario-template-base__header .formulario-publico-segmented")).to be_present
+      expect(menu.ancestors(".formulario-classes__box")).not_to be_empty
+      expect(caixa_turmas.text).to include("Selecione as turmas alvo")
+      expect(cabecalho_caixa.at_css(".formulario-class-filter__button")).to be_present
+      expect(pagina.css(".formulario-class-filter__section summary").map(&:text)).to contain_exactly("Matéria", "Professor")
+      expect(pagina.css(".formulario-class-filter__section[open]")).to be_empty
+      expect(pagina.at_css("input[placeholder='Pesquisar matéria']")).to be_present
+      expect(pagina.at_css("input[placeholder='Pesquisar professor']")).to be_present
+      expect(pagina.at_css("[data-filter-type='materia'][role='menuitemcheckbox']")).to be_present
+      expect(pagina.at_css("[data-filter-type='professor'][role='menuitemcheckbox']")).to be_present
+      expect(pagina.at_css("[data-filter-type='professor'][data-filter-value='#{professor.id}']")).to be_present
+      expect(pagina.at_css("[data-filter-type='professor'][data-filter-value='#{professor_do_departamento.id}']")).to be_present
+    end
+
+    it "renderiza a escolha de público-alvo como controle segmentado" do
+      sign_in_as(admin)
+
+      get new_formulario_path
+
+      pagina = Nokogiri::HTML(response.body)
+
+      expect(response).to have_http_status(:ok)
+      expect(pagina.css(".formulario-publico-field")).to be_empty
+      expect(pagina.at_css(".formulario-template-base__header .formulario-publico-segmented")).to be_present
+      expect(pagina.css("select[name='publico_alvo']")).to be_empty
+      valores_publico_alvo = pagina.css("input[name='publico_alvo'][type='radio']").map { |input| input["value"] }
+      expect(valores_publico_alvo).to contain_exactly("docentes", "discentes")
+      expect(pagina.at_css(".formulario-form-actions input.app-button--accent[type='submit']")).to be_present
     end
   end
 

@@ -1,5 +1,5 @@
 <main class="app-page template-page">
-  <header class="template-page__header">
+  <header class="app-page__header app-page__header--split">
     <h1><%= @template.titulo %></h1>
     <%= link_to "Usar em Formulário", new_formulario_path(template_id: @template.id), class: "app-button app-button--accent" %>
   </header>

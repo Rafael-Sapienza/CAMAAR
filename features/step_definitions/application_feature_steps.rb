@@ -19,20 +19,20 @@ When(/^eu tento exportar os resultados do formulário "([^"]+)"$/) do |nome|
 end
 
 When(/^seleciono o template "([^"]+)"$/) do |titulo|
-  select titulo, from: "template_id"
+  selecionar_template_no_formulario(titulo)
 end
 
 When(/^seleciono a turma "([^"]+)" da matéria "([^"]+)"$/) do |numero, materia|
   turma = turma_da_materia(numero, materia)
-  check turma.nome_exibicao
+  find("input[name='turma_ids[]'][value='#{turma.id}']", visible: :all).set(true)
 end
 
 When(/^seleciono o público-alvo "([^"]+)"$/) do |publico|
-  choose publico.capitalize, allow_label_click: true
+  selecionar_publico_alvo_no_dropdown(publico)
 end
 
 When(/^confirmo a criação do formulário$/) do
-  click_button "Confirmar Publicação"
+  click_button "Publicar formulário"
 end
 
 When(
@@ -43,8 +43,8 @@ When(
 
   page.driver.submit(
     :post,
-    preparar_formularios_path,
-    { template_id: template.id, turma_ids: [ turma.id ] }
+    formularios_path,
+    { template_id: template.id, turma_ids: [ turma.id ], publico_alvo: "discentes" }
   )
 end
 

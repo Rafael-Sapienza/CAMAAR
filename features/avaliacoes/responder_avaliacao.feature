@@ -14,13 +14,23 @@ Funcionalidade: Responder questionário da turma
     Quando eu preencho todas as questões obrigatórias
     E confirmo o envio da avaliação
     Então devo ver uma mensagem informando que a avaliação foi registrada com sucesso
+    E as respostas devem ficar salvas na avaliação
     E o formulário da turma "Cálculo 1" não deve mais aparecer na lista de pendentes
 
   @sad
-  Cenário: Participante tenta enviar resposta incompleta
+  Cenário: Participante tenta enviar avaliação sem responder questão objetiva
     Dado que estou autenticado como participante
     E que estou na página de resposta do formulário da turma "Cálculo 1"
-    Quando eu deixo uma questão obrigatória em branco
+    Quando eu deixo a questão objetiva em branco
+    E confirmo o envio da avaliação
+    Então devo ver uma mensagem informando que todas as questões obrigatórias devem ser preenchidas
+    E a avaliação não deve ser registrada
+
+  @sad
+  Cenário: Participante tenta enviar avaliação sem responder questão discursiva
+    Dado que estou autenticado como participante
+    E que estou na página de resposta do formulário da turma "Cálculo 1"
+    Quando eu deixo a questão discursiva em branco
     E confirmo o envio da avaliação
     Então devo ver uma mensagem informando que todas as questões obrigatórias devem ser preenchidas
     E a avaliação não deve ser registrada
@@ -31,6 +41,14 @@ Funcionalidade: Responder questionário da turma
     E que já respondi o formulário da turma "Cálculo 1" anteriormente
     Quando eu tento acessar a página de resposta do formulário da turma "Cálculo 1"
     Então devo ver uma mensagem informando que esta avaliação já foi respondida
+
+  @sad
+  Cenário: Participante tenta reenviar formulário já respondido pela requisição
+    Dado que estou autenticado como participante
+    E que já respondi o formulário da turma "Cálculo 1" anteriormente
+    Quando tento reenviar respostas para esse formulário
+    Então devo ver uma mensagem informando que esta avaliação já foi respondida
+    E nenhuma resposta adicional deve ser criada
 
   @sad
   Cenário: Participante tenta acessar avaliação de outro participante pela URL
@@ -44,6 +62,14 @@ Funcionalidade: Responder questionário da turma
     Dado que estou autenticado como participante
     E que estou na página de resposta do formulário da turma "Cálculo 1"
     Quando envio uma opção pertencente a outra questão
+    Então devo ver uma mensagem informando que todas as questões obrigatórias devem ser preenchidas
+    E a avaliação não deve ser registrada
+
+  @sad
+  Cenário: Participante tenta enviar opção inexistente para questão objetiva
+    Dado que estou autenticado como participante
+    E que estou na página de resposta do formulário da turma "Cálculo 1"
+    Quando envio uma opção inexistente para a questão objetiva
     Então devo ver uma mensagem informando que todas as questões obrigatórias devem ser preenchidas
     E a avaliação não deve ser registrada
 

@@ -133,5 +133,71 @@
         }
       ]
     }
+  ],
+  "usuarios_docentes": [
+    {
+      "matricula": "222111",
+      "nome": "Beatriz Rocha",
+      "email": "beatriz.rocha@camaar.edu",
+      "password": "senhaSeguraDocente1",
+      "status": 1,
+      "departamento_id_temp": 1,
+      "turmas_lecionadas": [
+        {
+          "materia_codigo": "CIC0001",
+          "numero_turma": 2,
+          "ano": 2026,
+          "semestre": 1
+        }
+      ]
+    },
+    {
+      "matricula": "333222",
+      "nome": "Renato Costa",
+      "email": "renato.costa@camaar.edu",
+      "password": "senhaSeguraDocente2",
+      "status": 1,
+      "departamento_id_temp": 1,
+      "turmas_lecionadas": [
+        {
+          "materia_codigo": "CIC0002",
+          "numero_turma": 1,
+          "ano": 2025,
+          "semestre": 1
+        }
+      ]
+    },
+    {
+      "matricula": "444222",
+      "nome": "Marina Lima",
+      "email": "marina.lima@camaar.edu",
+      "password": "senhaSeguraDocente3",
+      "status": 1,
+      "departamento_id_temp": 1,
+      "turmas_lecionadas": [
+        {
+          "materia_codigo": "CIC0002",
+          "numero_turma": 2,
+          "ano": 2026,
+          "semestre": 1
+        }
+      ]
+    },
+    {
+      "matricula": "777888",
+      "nome": "Paulo Nunes",
+      "email": "paulo.nunes@camaar.edu",
+      "password": "senhaSeguraDocente4",
+      "status": 1,
+      "departamento_id_temp": 2,
+      "turmas_lecionadas": [
+        {
+          "materia_codigo": "MAT0001",
+          "numero_turma": 1,
+          "ano": 2024,
+          "semestre": 2
+        }
+      ]
+    }
   ]
 }

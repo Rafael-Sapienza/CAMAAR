@@ -1,5 +1,7 @@
 <main class="app-page template-page">
-  <h1>Formulários</h1>
+  <header class="app-page__header">
+    <h1>Formulários</h1>
+  </header>
 
   <%# 1. Seção: Meus Formulários %>
   <section id="meus-formularios" class="template-section">
@@ -24,9 +26,10 @@
     <% end %>
   </section>
 
-  <%# 2. Seção: Formulários de Outros Administradores %>
+  <%# 2. Seção: Outros Formulários %>
   <section class="template-section">
-    <h2>Formulários de Outros Administradores do Mesmo departamento</h2>
+    <h2>Outros Formulários</h2>
+    <p class="template-section__subtitle">De Administradores do seu Departamento</p>
     
     <div class="template-form__cards <%= 'template-form__cards--empty' if @other_formularios.empty? %>">
       <% if @other_formularios.any? %>
