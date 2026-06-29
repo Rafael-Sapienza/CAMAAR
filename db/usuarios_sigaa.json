@@ -79,9 +79,9 @@
   ],
   "usuarios_discentes": [
     {
-      "matricula": "26100001",
+      "matricula": "232006216",
       "nome": "Rafael Sapienza",
-      "email": "ikmrfranca@gmail.com",
+      "email": "rafaelsapienzapinheiro@gmail.com",
       "status": 0,
       "turmas_matriculadas": [
         {
@@ -93,9 +93,9 @@
       ]
     },
     {
-      "matricula": "26100002",
+      "matricula": "232006215",
       "nome": "Estudante UnB",
-      "email": "242039130@aluno.unb.br",
+      "email": "232006215@aluno.unb.br",
       "status": 0,
       "turmas_matriculadas": [
         {

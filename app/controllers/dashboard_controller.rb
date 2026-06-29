@@ -117,7 +117,7 @@ class DashboardController < ApplicationController
 
   def redirecionar_envio_solicitacoes(sucessos, erros_envio)
     if erros_envio.empty?
-      redirect_to gerenciamento_path, flash: { success: "Convites enviados com sucesso para os <strong>#{sucessos}</strong> usuários do departamento!" }
+      redirect_to gerenciamento_path, flash: { success: "Convites enviados com sucesso para os <strong>#{sucessos}</strong> usuários pendentes do departamento!" }
     else
       redirect_to gerenciamento_path, flash: {
         error: "O envio foi concluído com instabilidades. Foram enviados #{sucessos} e-mails.",
