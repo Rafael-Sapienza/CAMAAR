@@ -2,6 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   static targets = ["native", "trigger", "label", "menu", "option"]
+  static values = { placeholder: String }
 
   connect() {
     this.syncLabel()
@@ -53,7 +54,7 @@ export default class extends Controller {
 
   syncLabel() {
     const selected = this.nativeTarget.selectedOptions[0]
-    this.labelTarget.textContent = selected?.textContent || "Tipo de questão"
+    this.labelTarget.textContent = selected?.textContent || this.placeholderValue || "Selecione"
 
     this.optionTargets.forEach((option) => {
       const selectedOption = option.dataset.dropdownValue === this.nativeTarget.value
