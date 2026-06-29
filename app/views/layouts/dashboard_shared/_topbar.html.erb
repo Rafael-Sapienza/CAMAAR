@@ -13,8 +13,10 @@
   <div class="search-container"
       data-controller="search"
       data-search-url-value="<%= sugestoes_pesquisa_path %>"
-      data-action="click@window->search#closeIfOutside">
+      data-action="click@window->search#closeIfOutside"
+      role="search">
     <%= form_with url: pesquisa_path, method: :get do %>
+      <%= label_tag :q, "Pesquisar no CAMAAR", class: "visually-hidden" %>
       <%= search_field_tag :q, params[:q],
             placeholder: "Pesquisar...",
             autocomplete: "off",

@@ -1,9 +1,26 @@
 # frozen_string_literal: true
 
+# Controla as telas e operações HTTP para gerenciamento de templates.
+#
+# Os métodos públicos correspondem às actions Rails e coordenam autorização,
+# preparação de dados para views e persistência dos templates.
 class TemplatesController < ApplicationController
   before_action :authenticate_user!
   before_action :set_template, only: %i[show edit update destroy]
 
+  # Lista os templates visíveis para o administrador autenticado.
+  #
+  # Argumentos:
+  # - Não recebe argumentos explicitamente. Usa o usuário autenticado e a
+  #   policy de templates da requisição atual.
+  #
+  # Retorno:
+  # - Não usa valor de retorno próprio. A action deixa +@user_templates+ e
+  #   +@other_templates+ disponíveis para a view.
+  #
+  # Efeitos colaterais:
+  # - Consulta o banco de dados.
+  # - Pode interromper a requisição se a autorização falhar.
   def index
     authorize! Template
 
@@ -15,10 +32,34 @@ class TemplatesController < ApplicationController
     @other_templates = templates.criados_por_outros(current_administrador)
   end
 
+  # Exibe um template específico.
+  #
+  # Argumentos:
+  # - Não recebe argumentos explicitamente. Usa +params[:id]+ indiretamente
+  #   pelo callback +set_template+.
+  #
+  # Retorno:
+  # - Não usa valor de retorno próprio. A action expõe +@template+ para a view.
+  #
+  # Efeitos colaterais:
+  # - Consulta o banco no callback +set_template+.
+  # - Pode interromper a requisição se a autorização falhar.
   def show
     authorize! @template
   end
 
+  # Prepara o formulário de criação de template.
+  #
+  # Argumentos:
+  # - Não recebe argumentos explicitamente. Usa o administrador autenticado.
+  #
+  # Retorno:
+  # - Não usa valor de retorno próprio. A action inicializa +@template+ para
+  #   renderização do formulário.
+  #
+  # Efeitos colaterais:
+  # - Instancia objetos em memória para os campos aninhados.
+  # - Pode interromper a requisição se a autorização falhar.
   def new
     @template = Template.new(adm: current_administrador)
     preparar_campos_do_template
@@ -26,9 +67,23 @@ class TemplatesController < ApplicationController
     authorize! @template
   end
 
+  # Cria um template com os parâmetros enviados pelo formulário.
+  #
+  # Argumentos:
+  # - Não recebe argumentos explicitamente. Usa +params[:template]+ e o
+  #   administrador autenticado.
+  #
+  # Retorno:
+  # - Não usa valor de retorno próprio. Em caso de sucesso, redireciona para o
+  #   template criado; em caso de erro, renderiza novamente a tela de criação.
+  #
+  # Efeitos colaterais:
+  # - Insere registros no banco quando o template é válido.
+  # - Redireciona para a página do template criado ou renderiza +new+ com
+  #   status +unprocessable_entity+.
+  # - Pode interromper a requisição se a autorização falhar.
   def create
-    @template = Template.new(template_params)
-    @template.adm = current_administrador
+    @template = build_template
 
     authorize! @template
 
@@ -41,12 +96,43 @@ class TemplatesController < ApplicationController
     end
   end
 
+  # Prepara o formulário de edição de um template existente.
+  #
+  # Argumentos:
+  # - Não recebe argumentos explicitamente. Usa +params[:id]+ indiretamente
+  #   pelo callback +set_template+.
+  #
+  # Retorno:
+  # - Não usa valor de retorno próprio. A action prepara +@template+ para a
+  #   view de edição.
+  #
+  # Efeitos colaterais:
+  # - Consulta o banco no callback +set_template+.
+  # - Instancia objetos em memória para campos aninhados faltantes.
+  # - Pode interromper a requisição se a autorização falhar.
   def edit
     preparar_campos_do_template
 
     authorize! @template
   end
 
+  # Atualiza um template existente e sua estrutura de questões/opções.
+  #
+  # Argumentos:
+  # - Não recebe argumentos explicitamente. Usa +params[:id]+ e
+  #   +params[:template]+ da requisição.
+  #
+  # Retorno:
+  # - Não usa valor de retorno próprio. Redireciona quando a atualização é
+  #   válida; renderiza +edit+ quando há erro de validação.
+  #
+  # Efeitos colaterais:
+  # - Atualiza registros no banco em transação.
+  # - Reordena temporariamente registros persistidos para evitar conflito de
+  #   índices únicos antes do update final.
+  # - Redireciona para a página do template ou renderiza +edit+ com status
+  #   +unprocessable_entity+.
+  # - Pode interromper a requisição se a autorização falhar.
   def update
     authorize! @template
 
@@ -61,6 +147,20 @@ class TemplatesController < ApplicationController
     end
   end
 
+  # Remove um template existente.
+  #
+  # Argumentos:
+  # - Não recebe argumentos explicitamente. Usa +params[:id]+ indiretamente
+  #   pelo callback +set_template+.
+  #
+  # Retorno:
+  # - Não usa valor de retorno próprio. Redireciona para a listagem de
+  #   templates após a remoção.
+  #
+  # Efeitos colaterais:
+  # - Remove o template do banco de dados.
+  # - Redireciona para +templates_path+ com mensagem de sucesso.
+  # - Pode interromper a requisição se a autorização falhar.
   def destroy
     authorize! @template
 
@@ -71,10 +171,52 @@ class TemplatesController < ApplicationController
 
   private
 
+  # Carrega o template informado na rota.
+  #
+  # Argumentos:
+  # - Não recebe argumentos explicitamente. Usa +params[:id]+.
+  #
+  # Retorno:
+  # - Retorna o objeto atribuído a +@template+ por convenção de atribuição Ruby.
+  # - Levanta exceção se o registro não existir.
+  #
+  # Efeitos colaterais:
+  # - Consulta o banco de dados.
+  # - Define a variável de instância +@template+.
   def set_template
     @template = Template.find(params[:id])
   end
 
+  # Monta um novo template a partir dos parâmetros permitidos.
+  #
+  # Argumentos:
+  # - Não recebe argumentos explicitamente. Usa +template_params+ e
+  #   +current_administrador+.
+  #
+  # Retorno:
+  # - Retorna uma instância de +Template+ ainda não persistida.
+  #
+  # Efeitos colaterais:
+  # - Não altera o banco de dados.
+  # - Associa o administrador autenticado ao objeto em memória.
+  def build_template
+    Template.new(template_params).tap do |template|
+      template.adm = current_administrador
+    end
+  end
+
+  # Garante que o template possua campos aninhados mínimos para o formulário.
+  #
+  # Argumentos:
+  # - Não recebe argumentos explicitamente. Usa +@template+.
+  #
+  # Retorno:
+  # - Retorna a coleção iterada pelo último +each+ quando há utilizações.
+  # - Pode retornar uma coleção vazia ou modificada em memória.
+  #
+  # Efeitos colaterais:
+  # - Cria objetos associados em memória quando faltam utilizações ou questões.
+  # - Não persiste alterações no banco de dados.
   def preparar_campos_do_template
     utilizacoes = @template.utilizacoes_questoes
     utilizacoes.build(numero: 1) if utilizacoes.empty?
@@ -84,88 +226,74 @@ class TemplatesController < ApplicationController
     end
   end
 
+  # Executa a atualização do template dentro de uma transação.
+  #
+  # Argumentos:
+  # - Não recebe argumentos explicitamente. Usa +@template+ e os parâmetros da
+  #   requisição.
+  #
+  # Retorno:
+  # - Retorna +true+ quando a transação conclui com sucesso.
+  # - Retorna +nil+ quando ocorre rollback por falha de validação.
+  #
+  # Efeitos colaterais:
+  # - Pode atualizar o banco de dados.
+  # - Pode reverter toda a transação quando o update falha.
   def atualizar_template_com_reordenacao
-    template_atualizado = false
-
     Template.transaction do
       preparar_reordenacao_de_registros_persistidos
-      template_atualizado = @template.update(template_params)
-
-      raise ActiveRecord::Rollback unless template_atualizado
+      update_template_or_rollback
     end
-
-    template_atualizado
   end
 
+  # Prepara registros já persistidos para receber novos números de ordenação.
+  #
+  # Argumentos:
+  # - Não recebe argumentos explicitamente. Usa +@template+ e
+  #   +params[:template][:utilizacoes_questoes_attributes]+.
+  #
+  # Retorno:
+  # - Retorna o resultado de +Templates::PersistedReordering.prepare+.
+  #
+  # Efeitos colaterais:
+  # - Atualiza temporariamente números de utilizações e opções persistidas no
+  #   banco de dados.
   def preparar_reordenacao_de_registros_persistidos
-    utilizacoes_attributes = nested_attributes_values(
-      params.dig(:template, :utilizacoes_questoes_attributes)
-    )
-
-    preparar_reordenacao_de_utilizacoes(utilizacoes_attributes)
-    preparar_reordenacao_de_opcoes(utilizacoes_attributes)
-  end
-
-  def preparar_reordenacao_de_utilizacoes(utilizacoes_attributes)
-    ids = utilizacoes_attributes
-      .reject { |attributes| destroy_attribute?(attributes) }
-      .filter_map { |attributes| persisted_id_with_number(attributes) }
-
-    UtilizacaoQuestao
-      .where(template_id: @template.id, id: ids)
-      .find_each
-      .with_index(1) do |utilizacao, index|
-        utilizacao.update_columns(numero: -index)
-      end
-  end
-
-  def preparar_reordenacao_de_opcoes(utilizacoes_attributes)
-    opcao_ids = utilizacoes_attributes.flat_map do |utilizacao_attributes|
-      opcao_ids_para_reordenacao(utilizacao_attributes)
-    end
-
-    Opcao.where(id: opcao_ids).find_each.with_index(1) do |opcao, index|
-      opcao.update_columns(numero: -index)
-    end
-  end
-
-  def opcao_ids_para_reordenacao(utilizacao_attributes)
-    opcoes_attributes_para_reordenacao(utilizacao_attributes)
-      .reject { |attributes| destroy_attribute?(attributes) }
-      .filter_map { |attributes| persisted_id_with_number(attributes) }
-  end
-
-  def opcoes_attributes_para_reordenacao(utilizacao_attributes)
-    questao_attributes = questao_attributes_para_reordenacao(utilizacao_attributes)
-    nested_attributes_values(
-      questao_attributes&.dig(:opcoes_attributes) ||
-        questao_attributes&.dig("opcoes_attributes")
+    Templates::PersistedReordering.prepare(
+      template: @template,
+      attributes: params.dig(:template, :utilizacoes_questoes_attributes)
     )
   end
 
-  def questao_attributes_para_reordenacao(utilizacao_attributes)
-    utilizacao_attributes[:questao_attributes] ||
-      utilizacao_attributes["questao_attributes"]
+  # Atualiza o template ou interrompe a transação atual.
+  #
+  # Argumentos:
+  # - Não recebe argumentos explicitamente. Usa +@template+ e
+  #   +template_params+.
+  #
+  # Retorno:
+  # - Retorna +true+ quando o update é bem-sucedido.
+  # - Levanta +ActiveRecord::Rollback+ quando o update retorna +false+.
+  #
+  # Efeitos colaterais:
+  # - Persiste alterações no banco quando o template é válido.
+  # - Dispara rollback da transação quando há erro de validação.
+  def update_template_or_rollback
+    @template.update(template_params) || raise(ActiveRecord::Rollback)
   end
 
-  def nested_attributes_values(attributes)
-    return [] if attributes.blank?
-    return attributes.values if attributes.respond_to?(:values)
-
-    Array(attributes)
-  end
-
-  def destroy_attribute?(attributes)
-    ActiveModel::Type::Boolean.new.cast(attributes[:_destroy] || attributes["_destroy"])
-  end
-
-  def persisted_id_with_number(attributes)
-    id = attributes[:id] || attributes["id"]
-    numero = attributes[:numero] || attributes["numero"]
-
-    id if id.present? && numero.present?
-  end
-
+  # Filtra os parâmetros permitidos para criação e atualização de templates.
+  #
+  # Argumentos:
+  # - Não recebe argumentos explicitamente. Usa +params[:template]+.
+  #
+  # Retorno:
+  # - Retorna um objeto +ActionController::Parameters+ permitido, contendo os
+  #   atributos aceitos para template, utilizações, questões e opções.
+  #
+  # Efeitos colaterais:
+  # - Não altera o banco de dados.
+  # - Levanta exceção se a chave obrigatória +:template+ não existir.
   def template_params
     params
       .require(:template)

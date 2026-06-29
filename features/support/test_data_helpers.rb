@@ -24,7 +24,24 @@ module TestDataHelpers
       criado_em: Time.current
     )
 
-    construir_questoes_do_template(template, questoes || questoes_padrao)
+    (questoes || questoes_padrao).each_with_index do |questao_attrs, index|
+      attrs = questao_attrs.dup
+      opcoes = attrs.delete(:opcoes)
+      numero = attrs.delete(:numero) || attrs.delete(:posicao) || (index + 1)
+      attrs.delete(:obrigatoria)
+
+      questao = Questao.new(attrs)
+
+      if opcoes.present?
+        Array(opcoes).each_with_index do |texto, opcao_index|
+          questao.opcoes.build(numero: opcao_index + 1, texto: texto)
+        end
+      end
+
+      questao.save!
+
+      template.utilizacoes_questoes.build(questao: questao, numero: numero)
+    end
 
     template.save!
     template.utilizacoes_questoes.each(&:save!)

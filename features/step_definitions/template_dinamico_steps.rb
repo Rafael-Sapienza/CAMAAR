@@ -74,15 +74,15 @@ def criar_template_com_questoes!(titulo, table)
   estado[:template_atual] = template
 end
 
-Quando(/^envio o formulário do template "([^"]+)" com as questões:$/) do |titulo, table|
+When(/^envio o formulário do template "([^"]+)" com as questões:$/) do |titulo, table|
   submeter_criacao_de_template(titulo, utilizacoes_attributes_da_tabela(table))
 end
 
-Dado(/^que existe o template "([^"]+)" com as questões:$/) do |titulo, table|
+Given(/^que existe o template "([^"]+)" com as questões:$/) do |titulo, table|
   criar_template_com_questoes!(titulo, table)
 end
 
-Quando(/^removo a questão "([^"]+)" do template "([^"]+)"$/) do |enunciado, titulo|
+When(/^removo a questão "([^"]+)" do template "([^"]+)"$/) do |enunciado, titulo|
   template = template_por_titulo!(titulo)
   utilizacao = utilizacao_da_questao!(template, enunciado)
 
@@ -97,7 +97,7 @@ Quando(/^removo a questão "([^"]+)" do template "([^"]+)"$/) do |enunciado, tit
   )
 end
 
-Quando(/^reordeno as questões do template "([^"]+)" para:$/) do |titulo, table|
+When(/^reordeno as questões do template "([^"]+)" para:$/) do |titulo, table|
   template = template_por_titulo!(titulo)
   utilizacoes_por_enunciado = template
     .utilizacoes_questoes
@@ -119,7 +119,7 @@ Quando(/^reordeno as questões do template "([^"]+)" para:$/) do |titulo, table|
   submeter_atualizacao_de_template(template, utilizacoes_attributes)
 end
 
-Então(/^o template "([^"]+)" deve conter as questões na ordem:$/) do |titulo, table|
+Then(/^o template "([^"]+)" deve conter as questões na ordem:$/) do |titulo, table|
   template = template_por_titulo!(titulo)
   questoes = template
     .questoes_ordenadas
@@ -128,7 +128,7 @@ Então(/^o template "([^"]+)" deve conter as questões na ordem:$/) do |titulo, 
   expect(questoes).to eq(table.hashes.map { |linha| linha.fetch("enunciado") })
 end
 
-Dado(
+Given(
   /^que existe o template "([^"]+)" com a questão objetiva "([^"]+)" e as opções:$/
 ) do |titulo, enunciado, table|
   opcoes = table.hashes.map { |linha| linha.fetch("texto") }
@@ -152,7 +152,7 @@ Dado(
   estado[:template_atual] = template
 end
 
-Quando(
+When(
   /^adiciono as opções à questão "([^"]+)" do template "([^"]+)":$/
 ) do |enunciado, titulo, table|
   template = template_por_titulo!(titulo)
@@ -186,7 +186,7 @@ Quando(
   )
 end
 
-Quando(
+When(
   /^removo a opção "([^"]+)" da questão "([^"]+)" do template "([^"]+)"$/
 ) do |texto, enunciado, titulo|
   template = template_por_titulo!(titulo)
@@ -213,7 +213,7 @@ Quando(
   )
 end
 
-Quando(
+When(
   /^reordeno as opções da questão "([^"]+)" do template "([^"]+)" para:$/
 ) do |enunciado, titulo, table|
   template = template_por_titulo!(titulo)
@@ -247,7 +247,7 @@ Quando(
   )
 end
 
-Então(
+Then(
   /^a questão "([^"]+)" do template "([^"]+)" deve conter as opções na ordem:$/
 ) do |enunciado, titulo, table|
   template = template_por_titulo!(titulo)

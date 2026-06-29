@@ -1,9 +1,9 @@
 <% opcao_persistida = edicao && opcao_form.object.persisted? %>
 
-<div class="template-option" data-template-form-option>
+<div class="template-option" data-template-form-option <%= "hidden" if opcao_form.object.marked_for_destruction? %>>
   <% if opcao_persistida %>
     <%= opcao_form.hidden_field :id, data: { template_form_opcao_id: true } %>
-    <%= opcao_form.hidden_field :_destroy, value: "0", data: { template_form_option_destroy: true } %>
+    <%= opcao_form.hidden_field :_destroy, value: opcao_form.object.marked_for_destruction? ? "1" : "0", data: { template_form_option_destroy: true } %>
   <% end %>
 
   <%= opcao_form.hidden_field :numero, data: { template_form_option_number: true } %>
@@ -15,7 +15,12 @@
       </span>
     </span>
 
-    <%= opcao_form.text_field :texto %>
+    <%= opcao_form.text_field(
+          :texto,
+          class: "app-control",
+          placeholder: "Opção #{opcao_form.object.numero || 1}",
+          data: { template_form_option_text: true }
+        ) %>
   </div>
 
   <div class="template-option__actions">

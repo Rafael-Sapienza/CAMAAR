@@ -83,11 +83,11 @@ class AuthController < ApplicationController
   def redirecionar_erro_login
     mensagem = if params[:identificador].blank? && params[:senha].blank?
                  "Informe sua matrícula ou e-mail e sua senha."
-               elsif params[:identificador].blank?
+    elsif params[:identificador].blank?
                  "Informe sua matrícula ou e-mail."
-               else
+    else
                  "Informe sua senha."
-               end
+    end
 
     redirecionar_com_erro(root_path, mensagem)
   end
@@ -247,9 +247,9 @@ class AuthController < ApplicationController
   def redirecionar_token_invalido(tipo_operacao)
     mensagem = if tipo_operacao == "redefinicao"
                  "O link de redefinição é inválido, expirou ou não corresponde a esta operação."
-               else
+    else
                  "O link de confirmação é inválido, expirou ou não corresponde a esta operação."
-               end
+    end
 
     redirecionar_com_erro(root_path, mensagem)
   end

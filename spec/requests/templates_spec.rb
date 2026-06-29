@@ -70,6 +70,10 @@ RSpec.describe "Templates", type: :request do
         Nokogiri::HTML(response.body)
           .at_xpath("//a[normalize-space()='Voltar aos templates']")
       ).to be_nil
+
+      pagina = Nokogiri::HTML(response.body)
+      expect(pagina.at_css("#meus-templates a.template-form__floating-action[href='#{new_template_path}']")).to be_present
+      expect(pagina.at_css("#meus-templates a.template-form__add-template-button")).to be_nil
     end
 
     it "renderiza a lixeira que envia DELETE para um template próprio" do
@@ -109,6 +113,8 @@ RSpec.describe "Templates", type: :request do
         formulario.at_css('button[aria-label="Excluir template Avaliação"]')
       ).to be_present
       expect(formulario.at_css('img[src*="icons/trash"]')).to be_present
+      expect(pagina.at_css("#meus-templates a.template-form__add-template-button[href='#{new_template_path}']")).to be_present
+      expect(pagina.at_css("#meus-templates a.template-form__floating-action")).to be_nil
     end
   end
 
@@ -129,9 +135,14 @@ RSpec.describe "Templates", type: :request do
         Nokogiri::HTML(response.body)
           .at_xpath("//a[normalize-space()='Voltar aos templates']")["href"]
       ).to eq(templates_path)
+
+      labels = Nokogiri::HTML(response.body)
+        .css(".template-form__metadata label")
+        .map { |label| label.text.strip }
+      expect(labels).to include("Título", "Descrição")
     end
 
-    it "prepara uma questão discursiva inicial sem opções" do
+    it "prepara uma questão inicial sem tipo e sem opções" do
       new_template = Template.new(adm_id: 1)
 
       allow(new_template).to receive(:questoes).and_return([])
@@ -143,50 +154,7 @@ RSpec.describe "Templates", type: :request do
       get new_template_path
 
       questao = new_template.utilizacoes_questoes.first.questao
-      expect(questao).to be_discursiva
-      expect(questao.opcoes).to be_empty
-    end
-
-    it "não renderiza campos de exclusão persistida na criação" do
-      new_template = Template.new(adm_id: 1)
-
-      allow(new_template).to receive(:questoes).and_return([])
-      allow(Template)
-        .to receive(:new)
-        .with(adm: current_administrador)
-        .and_return(new_template)
-
-      get new_template_path
-
-      expect(response.body).to include("template-form#destroyQuestion")
-      expect(response.body).to include("template-form#destroyOption")
-      expect(response.body).not_to include(
-        "template[utilizacoes_questoes_attributes][0][id]"
-      )
-      expect(response.body).not_to include(
-        "template[utilizacoes_questoes_attributes][0][_destroy]"
-      )
-      expect(response.body).not_to include(
-        "template[utilizacoes_questoes_attributes][NEW_QUESTION][id]"
-      )
-      expect(response.body).not_to include(
-        "template[utilizacoes_questoes_attributes][NEW_QUESTION][_destroy]"
-      )
-    end
-
-    it "prepara uma questão discursiva inicial sem opções" do
-      new_template = Template.new(adm_id: 1)
-
-      allow(new_template).to receive(:questoes).and_return([])
-      allow(Template)
-        .to receive(:new)
-        .with(adm: current_administrador)
-        .and_return(new_template)
-
-      get new_template_path
-
-      questao = new_template.utilizacoes_questoes.first.questao
-      expect(questao).to be_discursiva
+      expect(questao.tipo).to be_nil
       expect(questao.opcoes).to be_empty
     end
 
@@ -375,72 +343,34 @@ RSpec.describe "Templates", type: :request do
       )
       expect(response.body).to include("template-form#destroyQuestion")
       expect(response.body).to include("template-form#destroyOption")
+      expect(response.body).to include("template-form#ensureObjectiveOptions")
       expect(response.body).not_to include("checkbox")
       expect(response.body).not_to include("<span>Remover")
-    end
 
-    it "renderiza botões frontend para adicionar questão e opção" do
-      allow(Template).to receive(:find).with("1").and_return(template)
+      pagina = Nokogiri::HTML(response.body)
+      placeholders = pagina
+        .css(
+          '[data-template-form-question-index="0"] ' \
+            "[data-template-form-option-text]"
+        )
+        .map { |campo| campo["placeholder"] }
 
-      get edit_template_path(template)
+      expect(placeholders).to eq([ "Opção 1", "Opção 2", "Opção 3" ])
 
-      expect(response.body).to include("data-controller=\"template-form\"")
-      expect(response.body).to include("template-form#addQuestion")
-      expect(response.body).to include("template-form#addOption")
-      expect(response.body).to include("template-form#moveQuestionUp")
-      expect(response.body).to include("template-form#moveQuestionDown")
-      expect(response.body).to include("template-form#moveOptionUp")
-      expect(response.body).to include("template-form#moveOptionDown")
-      expect(response.body).to include("data-template-form-question-number")
-      expect(response.body).to include("data-template-form-option-number")
-      expect(response.body).not_to include("type=\"number\"")
-      expect(response.body).not_to include("name=\"adicionar_questao\"")
-      expect(response.body).not_to include("name=\"adicionar_opcao\"")
-      expect(response.body).to include("/assets/icons/plus-")
-      expect(response.body).to include("/assets/icons/arrow-up-")
-      expect(response.body).to include("/assets/icons/arrow-down-")
-      expect(response.body).not_to include("<span>Adicionar")
-      expect(response.body).not_to include("<span>Mover")
-    end
-
-    it "renderiza botões para remover questões e opções via update do template" do
-      template_com_questao_objetiva = create_template_with_questoes(
-        titulo: "Avaliação objetiva",
-        questoes: [
-          {
-            enunciado: "Como você avalia a disciplina?",
-            tipo: :objetiva,
-            opcoes: %w[Ruim Regular Bom]
-          }
-        ]
+      dropdown = pagina.at_css(
+        '[data-template-form-question-index="0"] [data-controller="dropdown"]'
       )
+      select_nativo = dropdown.at_css("select[data-dropdown-target='native']")
+      gatilho = dropdown.at_css("button[data-dropdown-target='trigger']")
+      menu = dropdown.at_css("[role='listbox'][data-dropdown-target='menu']")
 
-      allow(Template)
-        .to receive(:find)
-        .with(template_com_questao_objetiva.id.to_s)
-        .and_return(template_com_questao_objetiva)
-
-      get edit_template_path(template_com_questao_objetiva)
-
-      expect(response.body).to include("/assets/icons/trash-")
-      expect(response.body).to include(
-        "template[utilizacoes_questoes_attributes][0][id]"
-      )
-      expect(response.body).to include(
-        "template[utilizacoes_questoes_attributes][0][_destroy]"
-      )
-      expect(response.body).to include(
-        "template[utilizacoes_questoes_attributes][0]" \
-          "[questao_attributes][opcoes_attributes][0][id]"
-      )
-      expect(response.body).to include(
-        "template[utilizacoes_questoes_attributes][0]" \
-          "[questao_attributes][opcoes_attributes][0][_destroy]"
-      )
-      expect(response.body).to include("template-form#destroyQuestion")
-      expect(response.body).to include("template-form#destroyOption")
-      expect(response.body).not_to include("checkbox")
-      expect(response.body).not_to include("<span>Remover")
+      expect(select_nativo.at_css("option[selected]")["value"]).to eq("objetiva")
+      expect(gatilho["aria-haspopup"]).to eq("listbox")
+      expect(gatilho["aria-expanded"]).to eq("false")
+      expect(menu["hidden"]).not_to be_nil
+      expect(
+        menu.css("[role='option']").map { |opcao| opcao.text.strip }
+      ).to eq([ "Tipo de questão", "Discursiva", "Objetiva" ])
     end
 
     it "renderiza botões frontend para adicionar questão e opção" do
@@ -533,6 +463,107 @@ RSpec.describe "Templates", type: :request do
 
       expect(response).to redirect_to(template_path(template_com_questao_objetiva))
       expect(questao.opcoes.reload.pluck(:texto)).to include("Excelente")
+    end
+
+    it "rejeita a exclusão da última questão somente no submit do formulário" do
+      template_com_uma_questao = create_template_with_questoes(
+        titulo: "Avaliação discursiva",
+        questoes: [
+          {
+            enunciado: "Descreva sua experiência",
+            tipo: :discursiva
+          }
+        ]
+      )
+      utilizacao = template_com_uma_questao.utilizacoes_questoes.sole
+
+      patch template_path(template_com_uma_questao), params: {
+        template: {
+          titulo: template_com_uma_questao.titulo,
+          utilizacoes_questoes_attributes: {
+            "0" => {
+              id: utilizacao.id,
+              _destroy: "1"
+            }
+          }
+        }
+      }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("deve conter ao menos uma questão")
+      expect(UtilizacaoQuestao.exists?(utilizacao.id)).to be(true)
+
+      questao_removida = Nokogiri::HTML(response.body)
+        .at_css("[data-template-form-question][hidden]")
+      expect(questao_removida).to be_present
+      expect(
+        questao_removida.at_css("[data-template-form-question-destroy]")["value"]
+      ).to eq("1")
+    end
+
+    it "rejeita deixar uma questão objetiva com apenas uma opção no submit" do
+      template_objetivo = create_template_with_questoes(
+        titulo: "Avaliação objetiva mínima",
+        questoes: [
+          {
+            enunciado: "Como você avalia a disciplina?",
+            tipo: :objetiva,
+            opcoes: %w[Ruim Boa]
+          }
+        ]
+      )
+      utilizacao = template_objetivo.utilizacoes_questoes.sole
+      questao = utilizacao.questao
+      opcao_removida = questao.opcoes.first
+
+      patch template_path(template_objetivo), params: {
+        template: {
+          titulo: template_objetivo.titulo,
+          utilizacoes_questoes_attributes: {
+            "0" => {
+              id: utilizacao.id,
+              numero: utilizacao.numero,
+              questao_attributes: {
+                id: questao.id,
+                enunciado: questao.enunciado,
+                tipo: "objetiva",
+                opcoes_attributes: {
+                  "0" => {
+                    id: opcao_removida.id,
+                    _destroy: "1"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include(
+        "Opções devem ter pelo menos duas alternativas para questão objetiva"
+      )
+      expect(response.body).not_to include("Utilizacoes questoes questao opcoes")
+      expect(Opcao.exists?(opcao_removida.id)).to be(true)
+
+      pagina = Nokogiri::HTML(response.body)
+      dialogo = pagina.at_css(
+        "dialog.app-dialog.app-dialog--error[data-error-dialog-target='dialog']"
+      )
+      expect(dialogo).to be_present
+      expect(dialogo.at_css("h2").text.strip).to eq("Não foi possível salvar")
+      expect(dialogo.text).to include(
+        "Opções devem ter pelo menos duas alternativas para questão objetiva"
+      )
+      expect(
+        dialogo.at_css("button[aria-label='Fechar mensagem de erro']")
+      ).to be_present
+
+      opcao_oculta = pagina.at_css("[data-template-form-option][hidden]")
+      expect(opcao_oculta).to be_present
+      expect(
+        opcao_oculta.at_css("[data-template-form-option-destroy]")["value"]
+      ).to eq("1")
     end
   end
 

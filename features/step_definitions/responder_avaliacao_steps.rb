@@ -83,9 +83,26 @@ def questao_objetiva_contexto_resposta
       { numero: 2, texto: "Ruim" }
     ]
   )
-end
 
-def participacao_contexto_resposta(usuario, turma)
+  template = Template.create!(
+    adm: perf_adm,
+    titulo: "Template #{rand(1000)}",
+    utilizacoes_questoes_attributes: [
+      { questao_id: @questao_discursiva.id, numero: 1 },
+      { questao_id: @questao_objetiva.id,   numero: 2 }
+    ]
+  )
+
+  @questao_discursiva.reload
+  @questao_objetiva.reload
+
+  @formulario = Formulario.create!(
+    adm: perf_adm,
+    turma: @turma,
+    publico_alvo: :discentes,
+    template: template
+  )
+
   PerfilDiscente.find_or_create_by!(usuario: usuario)
   ParticipacaoTurma.find_or_create_by!(
     usuario: usuario,

@@ -6,13 +6,40 @@
       data: { controller: "template-form", action: "submit->template-form#renumberAll" }
     ) do |f| %>
   <% if template.errors.any? %>
-    <div>
-      <h2>Erros:</h2>
-      <ul>
-        <% template.errors.full_messages.each do |msg| %>
-          <li><%= msg %></li>
-        <% end %>
-      </ul>
+    <div data-controller="error-dialog">
+      <dialog
+        class="app-dialog app-dialog--error"
+        aria-labelledby="form-error-dialog-title"
+        data-error-dialog-target="dialog"
+        data-action="click->error-dialog#closeFromBackdrop">
+        <div class="app-dialog__panel">
+          <div class="app-dialog__icon" aria-hidden="true">!</div>
+
+          <div class="app-dialog__content">
+            <h2 id="form-error-dialog-title">Não foi possível salvar</h2>
+            <p>Revise os campos abaixo e tente novamente:</p>
+
+            <ul>
+              <% template.errors.full_messages.each do |msg| %>
+                <li><%= msg %></li>
+              <% end %>
+            </ul>
+          </div>
+
+          <button
+            type="button"
+            class="app-dialog__close"
+            aria-label="Fechar mensagem de erro"
+            data-action="error-dialog#close">×</button>
+        </div>
+
+        <div class="app-dialog__actions">
+          <button
+            type="button"
+            class="app-button"
+            data-action="error-dialog#close">Corrigir campos</button>
+        </div>
+      </dialog>
     </div>
   <% end %>
 
@@ -24,12 +51,12 @@
     <div class="template-form__metadata-fields">
       <div class="template-form__field">
         <%= f.label :titulo %>
-        <%= f.text_field :titulo %>
+        <%= f.text_field :titulo, class: "app-control" %>
       </div>
 
       <div class="template-form__field">
         <%= f.label :descricao %>
-        <%= f.text_area :descricao %>
+        <%= f.text_area :descricao, class: "app-control" %>
       </div>
     </div>
   </details>
@@ -77,7 +104,7 @@
     <% end %>
   </template>
 
-  <div class="template-form__actions">
+  <div class="app-actions template-form__actions">
     <%= link_to "Voltar aos templates", templates_path, class: "app-button app-button--secondary" %>
     <%= f.submit(
           template.persisted? ? "Atualizar template" : "Criar template",
